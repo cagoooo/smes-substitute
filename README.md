@@ -43,10 +43,15 @@ clasp update-deployment <deploymentId> -V <版本號> -d "更新說明"
 
 ## 📅 更新日誌與開發進度表
 
+- **`[x]` (2026.07.06-3)**：修復自動升版腳本的 Git 提交中文亂碼問題與更新提示優化：
+  - 調整 `bump-version.ps1` 內部的中文字常數改為 Unicode 碼拼裝，避開 PowerShell 5.1 解析 UTF-8 腳本的亂碼 Bug。
+  - 將提交訊息以 `.NET File API` 寫入標準 UTF-8 檔案並配合 `git commit -F` 提交，徹底避免 Windows 控制台引數傳遞的字元集轉換。
+  - 支援 `-notes` 命令列參數，免去互動式 `Read-Host` 的 Stdin 編碼錯位，且在 `.gitignore` 排除暫存檔。
+  - 依使用者要求，微調 `isSafeToSilentUpdate()` 邏輯，當處於未登入頁面時也照常彈出「✦ 系統有新版本」的通知橫幅。
 - **`[x]` (2026.07.06-8)**：實作新一輪 P0 安全防護與快取性能優化：
   - 優化 Google Chat Webhook 推播 JSON Payload，最外層加入自動化預覽文字（fallbackText），解決手機推播通知只顯示「傳送了一個附件」的經典痛點。
   - 在後端 Apps Script 中導入 `CacheService` 記憶體快取，快取 Email授權對照表、靜態教師課表、教學節數及彈性課程資料（快取 2 小時），大幅提升前端載入與課表切換速度。
-  - 於試算表自訂選單新增「🧹 清除系統快取 (課表變更時執行)」功能，供管理員隨時手動重新整理快取。
+  - 於試算表自訂選單新增「🧹 清除系統快取 (課表變更時執行)」與「🔑 授權教學組長為管理員 (自動名單寫入與清除快取)」功能，供管理員靈活操作。
 - **`[x]` (2026.07.06-6)**：實作 P1 流程自動化與功能優化：
   - 新增 `scripts/bump-version.ps1` 本地端 PowerShell 一鍵自動升版、安全檢測與 git push 部署腳本。
   - 新增自訂 GitHub Actions 部署工作流與 Python 金鑰替換框架，實行安全零密鑰洩漏。
