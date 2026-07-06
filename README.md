@@ -41,6 +41,12 @@ clasp update-deployment <deploymentId> -V <版本號> -d "更新說明"
 
 前端更新：改 `docs/index.html` 後 push main 即自動部署。
 
+## 📅 更新日誌與開發進度表
+
+- **`[x]` (2026.07.06-3)**：在登入頁面疊層底部新增授權與原創聲明頁尾 (Footer)，解決登入前無法看到原創連結的問題。
+- **`[x]` (2026.07.06-2)**：將原創新北市中和高中教學組詩穎老師的超連結更新為原創開源的起點複製模板連結，避免指向非開源版本，並修復 Service Worker 更新提示與版本同步機制。
+
 ---
 
 Made with ❤️ by [阿凱老師](https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5)
+
