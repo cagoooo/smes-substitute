@@ -81,6 +81,12 @@ Write-Host "✅ No API Key leaks found." -ForegroundColor Green
 
 # 7. Git commit & push
 Write-Host "📦 Git commit and push..." -ForegroundColor Yellow
+
+# 防止 PowerShell 傳遞給 git.exe 的中文參數與 Message 產生亂碼
+$OutputEncoding = [System.Text.Encoding]::UTF8
+[Console]::InputEncoding = [System.Text.Encoding]::UTF8
+[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+
 git add .
 $commitMsg = "✅升級 PWA 版本號為 $newVersion ($notes)"
 git commit -m $commitMsg
