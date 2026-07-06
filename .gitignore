@@ -1,0 +1,7 @@
+# clasp 憑證與專案對應（含 scriptId，不進公開 repo）
+gas/.clasp.json
+
+# 暫存
+*.xlsx
+setup_result.html
+node_modules/

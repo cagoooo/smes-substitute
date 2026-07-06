@@ -1,0 +1,952 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>石門國小調代課系統</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- 搜尋選單 CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <style>
+    :root { --in-color: #dcfce7; --out-color: #e9ecef; --elastic-color: #f0fdf4; }
+    body { background-color: #f0f2f5; font-family: "Microsoft JhengHei", sans-serif; overflow-x: hidden; font-size: 16px; }
+    .navbar { background: #212529; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .user-tag { font-size: 14px; background: rgba(255,255,255,0.1); padding: 5px 12px; border-radius: 20px; color: #fff; }
+    
+    /* 步驟引導樣式 */
+    .step-label { font-size: 14px; font-weight: bold; color: #0d6efd; margin-bottom: 5px; display: block; }
+    .top-instruction { font-size: 15px; color: #666; font-weight: bold; animation: pulse 2s infinite; }
+    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } 100% { opacity: 1; } }
+
+    /* 課表佈局 */
+    .table-fixed { table-layout: fixed; width: 100%; border-collapse: collapse; background: white; }
+    /* 🎯 降低課表高度 (85px -> 60px)，字體大小不變 */
+    .teacher-mini-cell { font-size: 14px; border: 1px solid #dee2e6; height: 60px !important; text-align: center; vertical-align: middle !important; position: relative; line-height: 1.1; padding: 2px !important; }
+    /* 🎯 節次垂直置中 */
+    .period-header { background: #343a40; color: white; width: 45px; font-weight: bold; text-align: center; vertical-align: middle !important; }
+    
+    /* 🎯 縮減中間與右側清單的列高 (減少 padding) */
+    .side-list-card .table td, .side-list-card .table th { padding: 4px 8px !important; vertical-align: middle !important; }
+    .day-header { background: #495057; color: white; font-weight: bold; height: 45px; text-align: center; vertical-align: middle !important; font-size: 15px; }
+    
+    .sub-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: #666; margin-bottom: 2px; }
+    .cls-line { font-size: 16px; font-weight: 900; color: #000; }
+    
+    /* 狀態顏色 */
+    .cell-out { background-color: var(--out-color) !important; color: #6c757d; }
+    .cell-in { background-color: var(--in-color) !important; color: #15803d; }
+    .cell-elastic { background-color: var(--elastic-color) !important; border: 2px solid #22c55e !important; }
+    .cell-selected { background-color: #fff3cd !important; border: 3px solid #ffc107 !important; z-index: 10; box-shadow: 0 0 10px rgba(255,193,7,0.5); }
+
+    .side-list-card { max-height: calc(100vh - 280px); overflow-y: auto; background: #fff; border: 1px solid #ddd; border-radius: 4px; }
+    .list-header { color: white; font-size: 15px; padding: 10px 15px; font-weight: bold; border-radius: 4px 4px 0 0; }
+    
+    /* 模式切換按鈕強化 */
+    .btn-mode-toggle { width: 50%; font-weight: bold; border-radius: 0; padding: 10px; border: 1px solid #198754; }
+    .btn-mode-toggle.active { background-color: #198754 !important; color: white !important; }
+    .btn-mode-toggle:not(.active) { background-color: white; color: #198754; }
+
+    .loading-overlay { position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(255,255,255,0.9); display:none; align-items:center; justify-content:center; z-index:9999; }
+    .attr-tag { position: absolute; top: 1px; right: 2px; font-size: 9px; padding: 1px 3px; border-radius: 3px; font-weight: bold; z-index: 5; }
+    .tag-red { background: #ef4444; color: white; }
+    .tag-green { background: #22c55e; color: white; }
+    .tag-blue { background: #3b82f6; color: white; }
+     .tag-gray { background: #64748b; color: white; } /* 🎯 新增：深灰色標籤供調出使用 */
+    .match-filter { background: #f8f9fa; border-bottom: 1px solid #ddd; padding: 10px; }
+    .choices__inner { background-color: #fff; min-height: 45px; border-radius: 5px; }
+    .opacity-50 { opacity: 0.5; }
+  </style>
+</head>
+<body class="p-0">
+
+  <div id="loading" class="loading-overlay"><div class="spinner-border text-primary me-2"></div><div id="loadMsg" class="fw-bold">正在讀取...</div></div>
+
+  <!-- 🔑 Google 登入疊層 -->
+  <div id="loginOverlay" style="position:fixed; inset:0; background:#f1f5f9; z-index:9000; display:flex; align-items:center; justify-content:center;">
+    <div style="background:white; padding:40px 36px; border-radius:16px; box-shadow:0 10px 25px rgba(0,0,0,0.1); text-align:center; max-width:420px; width:92%;">
+      <div style="font-size:52px;">📅</div>
+      <h4 class="fw-bold mt-2" style="color:#1e293b;">石門國小調代課系統</h4>
+      <p class="text-muted" style="font-size:14px;">請使用學校提供的 Google 帳號登入</p>
+      <div id="gisButton" class="d-flex justify-content-center my-3"></div>
+      <div id="loginError" class="text-danger small fw-bold" style="display:none;"></div>
+      <p class="text-muted mt-3" style="font-size:12px;">若無法進入，請聯繫教學組確認您在授權名單內。</p>
+    </div>
+  </div>
+
+  <!-- 📨 信件確認模式卡片 -->
+  <div id="confirmOverlay" style="position:fixed; inset:0; background:#f1f5f9; z-index:8500; display:none; align-items:center; justify-content:center;">
+    <div class="card shadow-lg" style="max-width:440px; width:92%; border:0; border-radius:16px;">
+      <div class="card-body p-4 text-center" id="confirmBody"></div>
+    </div>
+  </div>
+
+  <nav class="navbar navbar-dark p-2">
+    <div class="container-fluid">
+      <span class="navbar-brand h1 mb-0">📅 石門國小調代課系統
+        <a href="#" class="text-info ms-2" style="font-size: 17px; text-decoration: none; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#installHelpModal">
+    (📱加入手機桌面教學)
+  </a>
+        </span><div id="userBadge" class="user-tag">身分驗證中...</div></div>
+  </nav>
+
+  <div class="container-fluid mt-2 px-3">
+    <!-- 頂部控制列 -->
+    <div class="row align-items-center bg-white p-3 mb-2 shadow-sm rounded mx-1">
+      <div class="col-md-4">
+        <label class="step-label">1. 請選擇欲調代課之週次</label>
+        <select id="weekSelector" class="form-select" onchange="loadWeeklySchedule()"></select>
+      </div>
+      <div class="col-md-5">
+        <label class="small fw-bold text-muted mb-1">👤 查詢教師</label>
+        <div id="navGroup" class="d-flex w-100">
+          <button class="btn btn-outline-secondary" id="btnPrevT" onclick="navTeacher(-1)">◀</button>
+          <div class="flex-grow-1 mx-1"><select id="tSelector" onchange="loadWeeklySchedule()"></select></div>
+          <button class="btn btn-outline-secondary" id="btnNextT" onclick="navTeacher(1)">▶</button>
+        </div>
+      </div>
+      <div class="col-md-3 text-end pt-3">
+        <span class="top-instruction text-primary" id="step2-hint">2. 點擊欲調代課之該節課程</span>
+      </div>
+    </div>
+
+    <!-- 主內容區 5:4:3 -->
+    <div id="resultArea" class="row gx-3" style="display:none;">
+      <!-- 左：課表 (5) -->
+      <div class="col-md-5">
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center p-2">
+            <span id="vFullTName" class="fw-bold"></span>
+            <span id="vFullTProfile" class="small text-warning"></span>
+          </div>
+          <div class="card-body p-1">
+            <table class="table table-bordered table-fixed m-0"><thead id="gridHeader"></thead><tbody id="tFullGrid"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 中：媒合建議 (4) -->
+      <div class="col-md-4">
+        <div class="card shadow-sm border-0">
+          <div class="list-header bg-success">
+            📋 媒合建議名單 (<span id="refClassName">---</span>)
+          </div>
+          
+          <div id="step3-area" class="p-3 text-center border-bottom bg-light">
+             <div class="step-label mb-2">3. 請選擇媒合模式：代課 或 調課</div>
+             <div class="btn-group w-100 shadow-sm">
+                <button class="btn btn-mode-toggle active" id="mode-sub" onclick="changeMatchMode('sub')">🔍 找人代課</button>
+                <button class="btn btn-mode-toggle" id="mode-swap" onclick="changeMatchMode('swap')">🔄 節次調課</button>
+             </div>
+          </div>
+
+          <div class="match-filter">
+             <div id="targetTimeLabel" class="small fw-bold text-dark mb-2">💡 尚未選取節次</div>
+             <div id="swapWeekArea" class="d-none align-items-center bg-primary-subtle p-2 rounded">
+                <label class="small fw-bold me-2 text-primary">欲調課至週次：</label>
+                <select id="swapWeekSelector" class="form-select form-select-sm w-auto" onchange="showSubstituteSuggestions()"></select>
+             </div>
+          </div>
+
+          <div class="side-list-card" style="max-height: calc(100vh - 420px);">
+            <table class="table table-hover m-0">
+              <thead class="table-light small"><tr><th style="width:15%">時間</th><th style="width:35%">教師</th><th style="width:30%">課程</th><th style="width:20%">操作</th></tr></thead>
+              <tbody id="swapReferenceList">
+                <tr><td colspan="4" class="text-center p-5 text-muted">💡 請選取左側課表</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- 右：異動摘要 (3) -->
+      <div class="col-md-3">
+        <div class="card shadow-sm border-0">
+          <div class="list-header bg-primary">📅 調代課異動摘要</div>
+          <div class="side-list-card">
+            <table class="table table-sm table-hover m-0">
+              <thead class="table-light small">
+                <tr><th style="width:20%">狀態</th><th style="width:55%">日期/內容</th><th style="width:25%">單號</th></tr>
+              </thead>
+              <tbody id="personalChangeList">
+                <tr><td colspan="3" class="text-center p-4 text-muted small">無異動紀錄</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 對比 Modal -->
+  <div class="modal fade" id="compareModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered">
+      <div class="modal-content shadow-lg">
+        <div class="modal-header bg-primary text-white p-2"><h5 class="modal-title">📉 調代課模擬對照表</h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body p-3">
+          <div class="row gx-3 mb-3">
+            <div class="col-6 text-center"><div id="tAName" class="fw-bold border-bottom pb-1 mb-2"></div><table class="table table-bordered table-fixed m-0"><tbody id="tAGridMini"></tbody></table></div>
+            <div class="col-6 text-center"><div id="tBName" class="fw-bold border-bottom pb-1 mb-2"></div><table class="table table-bordered table-fixed m-0"><tbody id="tBGridMini"></tbody></table></div>
+          </div>
+          <div class="card bg-light border-0"><div class="card-body p-3">
+            <div class="row g-3 align-items-end">
+              <div class="col-md-3"><label class="fw-bold small mb-1">原因：</label><select id="adjReason" class="form-select form-select-sm">
+                <!-- 🎯 新增預設空選項，並設為 disabled 讓它只能當提示 -->  <option value="" selected disabled>請選擇假別...</option>
+                <option value="公假">公假</option><option value="事假">事假</option><option value="病假">病假</option><option value="家庭照護假">家庭照護假</option><option value="身心調適假">身心調適假</option><option value="喪假">喪假</option><option value="公務">公務</option><option value="補休">補休</option><option value="其他">其他</option><option value="休假">休假</option><option value="生理假">生理假</option><option value="婚假">婚假</option><option value="產前假">產前假</option><option value="分娩假">分娩假</option><option value="陪產假">陪產假</option><option value="居隔在家">居隔在家</option><option value="防疫隔離假">防疫隔離假</option><option value="自主防疫假">自主防疫假</option><option value="停止上班登記">停止上班登記</option>
+              </select></div>
+              <div class="col-md-3" id="feeArea"><label class="fw-bold small text-success mb-1">鐘點費（可改）：</label><select id="adjFee" class="form-select form-select-sm"></select></div>
+              <div class="col-md-3" id="dateBArea" style="display:none;"><label class="fw-bold small text-primary mb-1">對象日期(B)：</label><input type="text" id="adjDateBDisplay" class="form-control form-select-sm bg-white fw-bold text-primary" readonly></div>
+              <div class="col-md-4" id="submitActionArea"> <!-- 將欄位稍微調寬至 col-md-4 避免按鈕換行 -->
+  <label class="fw-bold small mb-1">操作：</label>
+  <div class="d-flex gap-2"> <!-- 使用 d-flex 並加上 gap-2 產生明顯間距 -->
+    <input type="text" id="adjNote" class="form-control form-control-sm" placeholder="備註" style="flex: 1;">
+    <button class="btn btn-success btn-sm" id="btnExecute" style="white-space: nowrap;" onclick="executeSubmit()">
+      提交申請，寄信通知對方教師
+    </button>
+  </div>
+</div>
+            </div>
+          </div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 手機加入桌面說明 Modal -->
+<div class="modal fade" id="installHelpModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header bg-info text-white">
+        <h5 class="modal-title">📱 將網頁加入手機桌面</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-4">
+          <h6 class="fw-bold text-primary">🍎 Safari 瀏覽器</h6>
+          <ol>
+            <li>點擊下方的「分享」圖示 (方框加向上箭頭 <i class="bi bi-share"></i>)。</li>
+            <li>向上滑動選單，找到並點擊<strong>「加入主畫面」</strong>。</li>
+            <li>點擊右上角的「新增」即可完成。</li>
+          </ol>
+        </div>
+        <hr>
+        <div>
+          <h6 class="fw-bold text-success">🤖 Chrome 瀏覽器</h6>
+          <ol>
+            <li>點擊右上角的「三個點」選單圖示 (<i class="bi bi-three-dots-vertical"></i>)。</li>
+            <li>點擊<strong>「加入主畫面」</strong>或<strong>「安裝應用程式」</strong>。</li>
+            <li>在彈出的視窗中點擊「新增」即可完成。</li>
+          </ol>
+        </div>
+        <div class="mt-3 p-2 bg-light rounded small text-muted">
+          💡 完成後，桌面上會出現「石門國小調代課系統」的圖示，下次點擊即可快速開啟！
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+  <footer class="site-credit no-print">
+    Made with <span class="site-credit__heart" aria-label="愛心">❤️</span> by
+    <a
+      href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="site-credit__author"
+    >阿凱老師</a>
+    <span class="site-credit__origin">｜改良自新北市中和高中教學組線上調代課系統</span>
+  </footer>
+  <style>
+    .site-credit {
+      text-align: center;
+      padding: 24px 16px;
+      font-size: 13px;
+      color: rgba(0, 0, 0, 0.55);
+      font-family: system-ui, -apple-system, sans-serif;
+    }
+    .site-credit__heart {
+      display: inline-block;
+      margin: 0 2px;
+      filter: saturate(1.1);
+    }
+    .site-credit__author {
+      color: inherit;
+      text-decoration: none;
+      border-bottom: 1px dotted currentColor;
+      padding-bottom: 1px;
+      transition: color .2s, border-color .2s;
+    }
+    .site-credit__author:hover {
+      color: #c63;
+      border-bottom-color: #c63;
+    }
+    .site-credit__origin { color: rgba(0,0,0,0.35); }
+    @media print { .no-print { display: none; } }
+  </style>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+  
+  <script src="https://accounts.google.com/gsi/client" async defer onload="initGis()"></script>
+  <script>
+    // --- 0. 系統設定 ---
+    const API_URL = "https://script.google.com/macros/s/AKfycbzeGgZklhc6C0dpQADW_YMGbvjUw5EYvmwetG6k0FeyfyVtmuPBacyOU1F2qedrfk1qIw/exec";
+    const OAUTH_CLIENT_ID = "__OAUTH_CLIENT_ID__"; // 由 GCP「OAuth 用戶端 ID（網頁應用程式）」取得
+    let ID_TOKEN = null;
+
+    // --- 0b. 後端 API 包裝（text/plain 避免 CORS preflight）---
+    async function api(fn, args) {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ fn: fn, args: args || [], idToken: ID_TOKEN })
+      });
+      const j = await res.json();
+      if (j.error === "UNAUTHENTICATED") {
+        // token 過期：回到登入畫面重新登入
+        showLoading(false);
+        document.getElementById('loginOverlay').style.display = 'flex';
+        throw new Error("登入已過期，請重新登入");
+      }
+      if (j.error) throw new Error(j.error);
+      return j.result;
+    }
+
+    // --- 0c. Google 登入（GIS）---
+    function initGis() {
+      google.accounts.id.initialize({
+        client_id: OAUTH_CLIENT_ID,
+        callback: onGisCredential,
+        auto_select: true
+      });
+      google.accounts.id.renderButton(document.getElementById('gisButton'), {
+        theme: "filled_blue", size: "large", text: "signin_with", locale: "zh_TW", width: 280
+      });
+    }
+
+    async function onGisCredential(resp) {
+      ID_TOKEN = resp.credential;
+      document.getElementById('loginOverlay').style.display = 'none';
+
+      // 📨 信件確認模式：網址帶 action + serial + token
+      const params = new URLSearchParams(location.search);
+      if (params.get("action") && params.get("serial") && params.get("token")) {
+        runConfirmFlow(params.get("action"), params.get("serial"), params.get("token"));
+        return;
+      }
+
+      showLoading(true, "身分驗證中...");
+      try {
+        const res = await api("init");
+        showLoading(false);
+        if (res.error) { renderAccessDenied(res); return; }
+        initSystem(res);
+      } catch (err) {
+        showLoading(false);
+        const el = document.getElementById('loginError');
+        el.style.display = 'block'; el.innerText = err.message;
+        document.getElementById('loginOverlay').style.display = 'flex';
+      }
+    }
+
+    // --- 1. 全域變數定義 (完整保留並新增) ---
+    let USER, WEEK_LIST, TEACHER_LIST, CURRENT_WEEK_DATES, ALL_DATA, WEEKLY_CHANGES, FULL_CHANGES, TODAY_STR;
+    let CURRENT_MATCH_MODE = 'sub', CLICKED_DATA = {}, PENDING_DATA = null, teacherChoices = null;
+
+    function initSystem(res) {
+        USER = res.user;
+        WEEK_LIST = res.weeks; 
+        TEACHER_LIST = res.teacherList;
+        ALL_DATA = res.baseData; 
+        TODAY_STR = res.todayStr;
+
+        document.getElementById('userBadge').innerText = `👤 ${USER.name} (${USER.role})`;
+        const wSel = document.getElementById('weekSelector'), swSel = document.getElementById('swapWeekSelector');
+        res.weeks.forEach(w => { 
+          let opt = `${w.label} (${w.range})`; 
+          wSel.add(new Option(opt, w.index)); 
+          swSel.add(new Option(opt, w.index)); 
+        });
+        wSel.value = res.initialWeekIndex; swSel.value = res.initialWeekIndex;
+
+        const tSel = document.getElementById('tSelector');
+        res.teacherList.forEach(t => tSel.add(new Option(t, t)));
+        if (USER.role === "教師") {
+          tSel.value = USER.name; tSel.disabled = true;
+          document.getElementById('btnPrevT').style.display = 'none'; document.getElementById('btnNextT').style.display = 'none';
+        } else {
+          teacherChoices = new Choices('#tSelector', { searchEnabled: true, itemSelectText: '', searchPlaceholderValue: '搜尋教師...' });
+        }
+        loadWeeklySchedule();
+    }
+
+    // --- 📨 信件確認流程（原 GAS doGet 確認頁的前端版）---
+    async function runConfirmFlow(action, serial, token) {
+      document.getElementById('confirmOverlay').style.display = 'flex';
+      const body = document.getElementById('confirmBody');
+      body.innerHTML = '<div class="spinner-border text-primary"></div><p class="mt-3 text-muted">正在讀取單據…</p>';
+      let info;
+      try {
+        info = await api("confirmInfo", [serial, token]);
+      } catch (err) {
+        body.innerHTML = `<h5 class="text-danger">❌ ${err.message}</h5>`;
+        return;
+      }
+      if (info.error) { body.innerHTML = `<h5 class="text-danger">❌ ${info.error}</h5>`; return; }
+      if (!info.isInvited) {
+        body.innerHTML = `
+          <div style="font-size:48px;">🚫</div>
+          <h5 class="fw-bold">權限不足</h5>
+          <p class="text-muted small">您登入的帳號不是此單據（${serial}）的受邀教師。<br>請改用受邀教師（${info.invitedTeacherName}）的 Google 帳號登入。</p>
+          <button class="btn btn-primary" onclick="location.reload()">重新登入</button>`;
+        return;
+      }
+      if (!info.pending) {
+        body.innerHTML = `
+          <h5 class="fw-bold">單據 ${serial} 已處理</h5>
+          <p class="text-muted">目前的狀態為：<b>${info.status}</b></p>
+          <p class="text-muted small">您可以直接關閉此視窗。</p>`;
+        return;
+      }
+
+      let infoHtml;
+      if (!info.isSwap) {
+        infoHtml = `<div style="background:#f0fdf4; border:1px solid #bbf7d0; padding:15px; border-radius:8px; text-align:left;">
+            <div><b>🗓️ 日期：</b> ${info.info.date}</div>
+            <div><b>⏰ 節次：</b> ${info.info.time}</div>
+            <div><b>🏫 班級：</b> ${info.info.cls} ${info.info.subject}</div>
+            <div><b>👤 申請老師：</b> ${info.info.applicant}</div>
+          </div>`;
+      } else {
+        infoHtml = `<div style="background:#eff6ff; border:1px solid #bfdbfe; padding:15px; border-radius:8px; text-align:left;">
+            <div style="margin-bottom:8px; border-bottom:1px dashed #3b82f6; padding-bottom:8px;"><b>🏫 班級：</b> ${info.info.cls}</div>
+            <div><span style="color:#3b82f6; font-weight:bold;">[您的課節]</span><br>${info.info.mine.date} (${info.info.mine.time}) - ${info.info.mine.subject}</div>
+            <div style="text-align:center; color:#64748b; margin:5px 0;"> ⬇️ 互調 ⬇️ </div>
+            <div><span style="color:#1e40af; font-weight:bold;">[對方的課節]</span><br>${info.info.theirs.date} (${info.info.theirs.time}) - ${info.info.theirs.subject}</div>
+          </div>`;
+      }
+      const isAccept = (action === "accept");
+      const btnColor = isAccept ? "#22c55e" : "#ef4444";
+      body.innerHTML = `
+        <h5 class="fw-bold" style="color:#1e293b;">調代課確認</h5>
+        <p>單號：<b>${serial}</b></p>
+        <div style="font-size:19px; font-weight:bold; color:${btnColor}; margin-bottom:16px;">${isAccept ? "同意並確認" : "拒絕此申請"}</div>
+        <div class="mb-3">${infoHtml}</div>
+        <button class="btn w-100 fw-bold text-white" style="background:${btnColor}; padding:14px;" id="confirmBtn">確定執行</button>`;
+      document.getElementById('confirmBtn').onclick = async function () {
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>處理中...';
+        try {
+          const r = await api("confirm", [action, serial, token]);
+          body.innerHTML = r.success
+            ? `<h4 style="color:#22c55e;">✅ 操作成功</h4><p class="text-muted">回覆已記錄，並已發信通知相關人員。<br>可直接關閉視窗。</p>`
+            : `<h4 class="text-danger">❌ 處理失敗</h4><p class="text-muted">${r.error}</p>`;
+        } catch (err) {
+          body.innerHTML = `<h4 class="text-danger">❌ 處理失敗</h4><p class="text-muted">${err.message}</p>`;
+        }
+      };
+    }
+
+    function renderAccessDenied(res) {
+      const appUrl = location.origin + location.pathname; // 取得系統網址
+      const switchUrl = "https://accounts.google.com/AccountChooser?continue=" + encodeURIComponent(appUrl);
+      
+      document.body.innerHTML = `
+        <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100vh; font-family:sans-serif; text-align:center; background:#f8fafc; padding:20px;">
+          <div style="background:white; padding:40px; border-radius:15px; box-shadow:0 10px 25px rgba(0,0,0,0.1); max-width:500px;">
+            <div style="font-size:60px; margin-bottom:20px;">🚫</div>
+            <h2 style="color:#1e293b; margin-bottom:10px;">權限不足</h2>
+            <p style="color:#64748b; font-size:16px; line-height:1.6;">
+              目前登入帳號：<b style="color:#ef4444;">${res.email}</b><br>
+              ${res.msg}
+            </p>
+            <hr style="margin:30px 0; border:0; border-top:1px solid #e2e8f0;">
+            <a href="${switchUrl}" style="background:#2563eb; color:white; text-decoration:none; padding:15px 30px; border-radius:8px; font-weight:bold; display:inline-block; transition:background 0.2s;">
+              切換 Google 帳號
+            </a>
+            <p style="margin-top:20px; font-size:13px; color:#94a3b8;">
+              若帳號正確但仍無法進入，請聯繫<b>教學組</b>。
+            </p>
+          </div>
+        </div>
+      `;
+    } 
+    /**
+     * --- 2. 載入邏輯 (輕量更新) ---
+     */
+    function loadWeeklySchedule() {
+      const tName = teacherChoices ? teacherChoices.getValue(true) : document.getElementById('tSelector').value;
+      const weekIdx = document.getElementById('weekSelector').value;
+      if (!tName) return;
+
+      showLoading(true, "載入中...");
+      api("weekly", [parseInt(weekIdx)]).then(res => {
+        CURRENT_WEEK_DATES = res.weekDates;
+        WEEKLY_CHANGES = res.weeklyChanges;
+        FULL_CHANGES = res.fullChanges;
+
+        const finalSchedule = simulateTeacherWeek(tName, weekIdx);
+        renderGrid(finalSchedule, tName);
+        renderPersonalChangeList(tName);
+
+        document.getElementById('resultArea').style.display = 'flex';
+        resetSwapReference();
+        showLoading(false);
+      }).catch(err => { showLoading(false); alert("載入失敗：" + err.message); });
+    }
+
+    /**
+     * --- 3. 核心課表模擬邏輯 (保留單雙週限制、彈性表合併、狀態篩選) ---
+     */
+    function simulateTeacherWeek(tName, weekIdx) {
+      const weekIdxInt = parseInt(weekIdx);
+      const weekNum = weekIdxInt + 1;
+      const isEven = (weekNum % 2 === 0);
+      const weekDates = WEEK_LIST[weekIdxInt].dates;
+      let baseSchedule = {};
+      
+      if (ALL_DATA.teacherSchedules[tName]) {
+        baseSchedule = ALL_DATA.teacherSchedules[tName];
+      } else {
+        let individuals = String(tName).split(/[&/]/).map(n => n.trim());
+        for (let name of individuals) { if (ALL_DATA.teacherSchedules[name]) { baseSchedule = ALL_DATA.teacherSchedules[name]; break; } }
+      }
+      let schedule = JSON.parse(JSON.stringify(baseSchedule || {}));
+      // 🎯 空白日期隱藏（國小版：移除原高中「高三畢業動態隱藏」，
+      //    因國小三年級班名同樣以 3 開頭，套用會誤刪課表）
+      ['一','二','三','四','五'].forEach((d, i) => {
+        // 🎯 如果該天沒有日期 (例如學期末最後一週只上一二)，直接清空整天課表
+        if (!weekDates[i] || weekDates[i].trim() === "") {
+          for (let p = 1; p <= 8; p++) delete schedule[d + p];
+          return; // 跳過這天後續的判斷
+        }
+      });
+
+      // B. 單雙週課程解析（國小版：不強制標「輔導」，各節次皆適用）
+      for (let k in schedule) {
+        if (schedule[k].sub.includes("單") || schedule[k].sub.includes("雙")) {
+          let regex = isEven ? /雙([^單雙\s/]+)/ : /單([^單雙\s/]+)/;
+          let match = schedule[k].sub.match(regex);
+          if (match) {
+            schedule[k].sub = match[1];
+            if (schedule[k].cls && (schedule[k].cls.includes("單") || schedule[k].cls.includes("雙"))) {
+              let clsMatch = schedule[k].cls.match(regex);
+              if (clsMatch) schedule[k].cls = clsMatch[1];
+            }
+          } else { delete schedule[k]; }
+        }
+      }
+
+      // C. 彈性師表 (保留多表合併與精確匹配)
+      let tNameList = String(tName).split(/[&/]/).map(n => n.trim());
+      let allElasticItems = [];
+      for (let sN in ALL_DATA.elasticData.teacher) {
+        tNameList.forEach(singleName => {
+          let list = ALL_DATA.elasticData.teacher[sN][singleName] || [];
+          allElasticItems = allElasticItems.concat(list);
+        });
+      }
+      const currentWeekItems = allElasticItems.filter(it => String(it.w).replace(/[^\d]/g, "") === String(weekNum));
+      currentWeekItems.forEach(it => {
+        let k = it.d + it.p;
+        if (it.val && it.val !== "0" && it.val !== "") {
+          schedule[k] = { sub: "彈性學習", cls: it.val, isElastic: true, tag: '<span class="attr-tag tag-green">實支</span>', rawAttr: "實支" };
+        }
+      });
+      for (let k in schedule) {
+    // 🎯 移除原本的 .includes("彈性") 判斷
+    if (schedule[k].cls && schedule[k].cls.includes("輪流")) {
+      // 檢查本週這節課在合併後的彈性紀錄中是否有值
+      let hasData = currentWeekItems.some(it => (it.d + it.p) === k && it.val && it.val !== "0");
+      if (!hasData) {
+        delete schedule[k]; // 只有「輪流」且沒資料才會消失
+      }
+    }
+  }
+      // D. 調代課覆蓋 (僅限教師確認後或行政直接輸入)
+      const validStatus = ["教師皆確認可出單", "可出單","已出單"];
+      
+      WEEKLY_CHANGES.allSwap.forEach(r => {
+        if (validStatus.includes(r[12])) {
+          let tAList = String(r[2]).split(/[&/]/).map(n => n.trim());
+          let tBList = String(r[3]).split(/[&/]/).map(n => n.trim());
+          
+          if (tNameList.some(n => tAList.includes(n))) {
+            if (weekDates.includes(r[6])) schedule[r[7]] = { sub: r[8], cls: r[5], type: 'swap_out', tag: '<span class="attr-tag tag-gray">調出</span>' };
+            if (weekDates.includes(r[9])) schedule[r[10]] = { sub: r[8], cls: r[5], type: 'in', tag: '<span class="attr-tag tag-green">調入</span>' };
+          }
+          if (tNameList.some(n => tBList.includes(n))) {
+            if (weekDates.includes(r[9])) schedule[r[10]] = { sub: r[11], cls: r[5], type: 'swap_out', tag: '<span class="attr-tag tag-gray">調出</span>' };
+            if (weekDates.includes(r[6])) schedule[r[7]] = { sub: r[11], cls: r[5], type: 'in', tag: '<span class="attr-tag tag-green">調入</span>' };
+          }
+        }
+      });
+
+      WEEKLY_CHANGES.allSub.forEach(r => {
+        if (weekDates.includes(r[7]) && validStatus.includes(r[10])) {
+          let leaveTList = String(r[2]).split(/[&/]/).map(n => n.trim());
+          let subTList = String(r[3]).split(/[&/]/).map(n => n.trim());
+          
+          if (tNameList.some(n => leaveTList.includes(n))) schedule[r[8]] = { sub: r[6], cls: r[5], type: 'sub_out', tag: '<span class="attr-tag tag-red">請假</span>' };
+          if (tNameList.some(n => subTList.includes(n))) schedule[r[8]] = { sub: r[6], cls: r[5], type: 'in', tag: '<span class="attr-tag tag-green">代課</span>' };
+        }
+      });
+
+            return schedule; // 🎯 補上這行：回傳計算好的課表
+    } // 🎯 補上這行：關閉 simulateTeacherWeek 函式
+
+    /**
+     * --- 4. 課表渲染 (新增格子鎖定功能) ---
+     */
+    function renderGrid(schedule, tName) {
+      let headerH = `<tr class="day-header"><th style="width:45px">節</th>`;
+      ['一','二','三','四','五'].forEach((d, i) => { headerH += `<th>${d}<br><span class="date-sub">${CURRENT_WEEK_DATES[i]}</span></th>`; });
+      document.getElementById('gridHeader').innerHTML = headerH + `</tr>`;
+
+     // --- 🎯 修正後的鎖定索引邏輯：增加姓名拆解比對 ---
+  let pendingMap = {};
+  const tNameList = String(tName).split(/[&/]/).map(n => n.trim()); 
+
+  WEEKLY_CHANGES.allSub.forEach(r => { 
+    let leaveTList = String(r[2]).split(/[&/]/).map(n => n.trim());
+    let subTList = String(r[3]).split(/[&/]/).map(n => n.trim());
+    if(r[10] === "待受邀人確認" && (tNameList.some(n => leaveTList.includes(n)) || tNameList.some(n => subTList.includes(n)))) {
+      pendingMap[r[8]] = true; 
+    } 
+  });
+
+  WEEKLY_CHANGES.allSwap.forEach(r => { 
+    let tAList = String(r[2]).split(/[&/]/).map(n => n.trim());
+    let tBList = String(r[3]).split(/[&/]/).map(n => n.trim());
+    if(r[12] === "待受邀人確認" && (tNameList.some(n => tAList.includes(n)) || tNameList.some(n => tBList.includes(n)))) {
+       if(CURRENT_WEEK_DATES.includes(r[6])) pendingMap[r[7]] = true;
+       if(CURRENT_WEEK_DATES.includes(r[9])) pendingMap[r[10]] = true;
+    }
+  });
+  // ------------------------------------------
+
+      let bodyH = '';
+      for (let p = 1; p <= 8; p++) {
+        bodyH += `<tr><td class="period-header">${p}</td>`;
+        ['一','二','三','四','五'].forEach(d => {
+          let k = d + p;
+          let item = schedule[k], v = "", clsName = "", style = "", clickAttr = "";
+          
+          if (pendingMap[k]) {
+            v = `<div class="sub-line text-warning fw-bold">確認中...</div><div class="cls-line text-muted">鎖定</div>`;
+            clsName = "cell-out"; style = "cursor:not-allowed; opacity:0.8;";
+          } else if (item) {
+            // 🎯 新增：判斷如果是「調出」，加上刪除線與半透明效果
+            let strikeStyle = (item.type === 'swap_out') ? 'text-decoration: line-through; opacity: 0.5;' : '';
+            
+            v = `${item.tag || ""}<div class="sub-line" style="${strikeStyle}">${item.sub}</div><div class="cls-line" style="${strikeStyle}">${item.cls || ""}</div>`;
+            
+            if (item.type === 'sub_out' || item.type === 'swap_out') clsName = "cell-out"; 
+            else if (item.type === 'in') clsName = "cell-in"; 
+            else if (item.isElastic) clsName = "cell-elastic";
+            
+            if (USER.role !== "行政" && !['sub_out', 'swap_out'].includes(item.type)) {
+              style = "cursor:pointer;";
+              clickAttr = `onclick="handleCellClick(this, '${k}', '${item.cls}', '${tName}', '${item.rawAttr || ""}')"`;
+            }
+          }
+          bodyH += `<td class="teacher-mini-cell ${clsName}" style="${style}" ${clickAttr}>${v}</td>`;
+        });
+        bodyH += `</tr>`;
+      }
+      document.getElementById('tFullGrid').innerHTML = bodyH;
+      document.getElementById('vFullTName').innerText = `👤 ${tName}`;
+    }
+
+    /**
+     * --- 5. 右側摘要渲染 (全量、分段排序、三色標籤) ---
+     */
+    function renderPersonalChangeList(tName) {
+      const listBody = document.getElementById('personalChangeList');
+      const tNameList = String(tName).split(/[&/]/).map(n => n.trim());
+      let allRecords = [];
+
+    // 1. 處理代課紀錄 (Sub)
+  FULL_CHANGES.allSub.forEach(r => {
+    let leaveTList = String(r[2]).split(/[&/]/).map(n => n.trim());
+    let subTList = String(r[3]).split(/[&/]/).map(n => n.trim());
+    
+    if (tNameList.some(n => leaveTList.includes(n)) || tNameList.some(n => subTList.includes(n))) {
+      let displayType = r[2] + '→' + r[3] + '代課'; 
+      allRecords.push({ type: displayType, date: r[7], time: r[8], cls: r[5], status: r[10], serial: r[1] });
+    }
+  });
+
+  // 2. 處理調課紀錄 (Swap)
+  FULL_CHANGES.allSwap.forEach(r => {
+    let tAList = String(r[2]).split(/[&/]/).map(n => n.trim());
+    let tBList = String(r[3]).split(/[&/]/).map(n => n.trim());
+    let displayPrefix = r[2] + '&' + r[3]; 
+    
+    if (tNameList.some(n => tAList.includes(n))) {
+       allRecords.push({ type: displayPrefix + '調出', date: r[6], time: r[7], cls: r[5], status: r[12], serial: r[1] });
+       allRecords.push({ type: displayPrefix + '調入', date: r[9], time: r[10], cls: r[5], status: r[12], serial: r[1] });
+    } else if (tNameList.some(n => tBList.includes(n))) {
+       allRecords.push({ type: displayPrefix + '調出', date: r[9], time: r[10], cls: r[5], status: r[12], serial: r[1] });
+       allRecords.push({ type: displayPrefix + '調入', date: r[6], time: r[7], cls: r[5], status: r[12], serial: r[1] });
+    }
+  });
+
+      const todayVal = new Date(TODAY_STR.replace(/\//g, "-")).getTime();
+      let future = allRecords.filter(r => new Date(r.date.replace(/\//g, "-")).getTime() >= todayVal);
+      let past = allRecords.filter(r => new Date(r.date.replace(/\//g, "-")).getTime() < todayVal);
+      future.sort((a, b) => new Date(a.date.replace(/\//g, "-")) - new Date(b.date.replace(/\//g, "-")));
+      past.sort((a, b) => new Date(b.date.replace(/\//g, "-")) - new Date(a.date.replace(/\//g, "-")));
+
+      const html = future.concat(past).map(r => {
+        let badgeClass = "bg-secondary";
+        if (r.status === "待受邀人確認") badgeClass = "bg-warning text-dark";
+        else if (r.status === "教師皆確認可出單" || r.status === "可出單"|| r.status === "已出單") badgeClass = "bg-success";
+        const dateStr = r.date.split('/').slice(1).join('/');
+        const isPast = new Date(r.date.replace(/\//g, "-")).getTime() < todayVal;
+        
+        // 🎯 在日期/內容的 <td> 加上 style="white-space: nowrap;" 強制不換行
+        return `<tr class="small ${isPast ? 'opacity-50' : ''}">
+          <td><span class="badge ${badgeClass}" style="font-size:10px; white-space: normal;">${r.status}</span></td>
+          <td style="white-space: nowrap;">${dateStr} (${r.time})<br><b>${r.type} (${r.cls})</b></td>
+          <td class="text-end"><small class="text-muted">${r.serial}</small></td>
+        </tr>`;
+      }).join('');
+      listBody.innerHTML = html || '<tr><td colspan="3" class="text-center p-4 text-muted small">暫無紀錄</td></tr>';
+    }
+
+    // --- 其餘輔助函式 (完整保留) ---
+    function handleCellClick(el, timeKey, cls, tName, rawAttr) {
+      if (!cls || cls === "---") return;
+      document.querySelectorAll('.teacher-mini-cell').forEach(c => c.classList.remove('cell-selected'));
+      el.classList.add('cell-selected');
+      const dIdx = ['一','二','三','四','五'].indexOf(timeKey[0]);
+      CLICKED_DATA = { timeKey, cls, teacher: tName, date: CURRENT_WEEK_DATES[dIdx], rawAttr };
+      document.getElementById('refClassName').innerText = cls;
+      document.getElementById('targetTimeLabel').innerText = `已選定：${CLICKED_DATA.date} (${timeKey})`;
+      document.getElementById('step2-hint').className = "top-instruction text-success";
+      document.getElementById('step2-hint').innerText = "✅ 已選定節次";
+      document.getElementById('swapWeekSelector').value = document.getElementById('weekSelector').value;
+      showSubstituteSuggestions();
+    }
+
+    function changeMatchMode(mode) {
+      CURRENT_MATCH_MODE = mode;
+      document.getElementById('mode-sub').classList.toggle('active', mode === 'sub');
+      document.getElementById('mode-swap').classList.toggle('active', mode === 'swap');
+      const area = document.getElementById('swapWeekArea');
+      area.className = (mode === 'swap') ? "d-flex align-items-center bg-primary-subtle p-2 rounded" : "d-none";
+      if (CLICKED_DATA.timeKey) showSubstituteSuggestions();
+    }
+
+    function isCellAvailable(weekSched, timeK) {
+      let cell = weekSched[timeK];
+      if (!cell) return true;
+      if (cell.type === 'in') return false;
+      if (cell.type === 'sub_out' || cell.type === 'swap_out') return true;
+      return false;
+    }
+
+    function showSubstituteSuggestions() {
+      const listBody = document.getElementById('swapReferenceList'), tName = CLICKED_DATA.teacher, timeK = CLICKED_DATA.timeKey, cls = CLICKED_DATA.cls;
+      const curWIdx = parseInt(document.getElementById('weekSelector').value);
+      const tarWIdx = parseInt(CURRENT_MATCH_MODE === 'swap' ? document.getElementById('swapWeekSelector').value : curWIdx);
+      listBody.innerHTML = `<tr><td colspan="4" class="text-center p-3">媒合中...</td></tr>`;
+      try {
+        let sameClassTeachers = new Set();
+        let classBaseSched = ALL_DATA.classData[cls]?.schedule || {};
+        for (let k in classBaseSched) {
+          let tRaw = classBaseSched[k].split('<br><small>')[1]?.replace('</small>', '') || "";
+          tRaw.split(/[&/]/).forEach(n => sameClassTeachers.add(n.trim()));
+        }
+        const currentTeacherSubject = ALL_DATA.teacherSubjectMap[tName] || "";
+        
+        if (CURRENT_MATCH_MODE === 'sub') {
+          let list = TEACHER_LIST.filter(n => n !== tName && n !== "無固定教師" && n !== "輪流" && isCellAvailable(simulateTeacherWeek(n, curWIdx), timeK));
+          
+          // 🎯 新增：代課名單智慧排序 (同班優先 > 同科次之)
+          list.sort((a, b) => {
+            let scoreA = 0, scoreB = 0;
+            
+            // 計算 A 老師的分數
+            if (sameClassTeachers.has(a)) scoreA += 2;
+            if (currentTeacherSubject && ALL_DATA.teacherSubjectMap[a] === currentTeacherSubject) scoreA += 1;
+            
+            // 計算 B 老師的分數
+            if (sameClassTeachers.has(b)) scoreB += 2;
+            if (currentTeacherSubject && ALL_DATA.teacherSubjectMap[b] === currentTeacherSubject) scoreB += 1;
+            
+            // 分數高的排前面 (降冪排序)
+            return scoreB - scoreA; 
+          });
+
+          // 代課 (sub) 的按鈕替換：
+          listBody.innerHTML = list.map(n => {
+            let tags = "";
+            if (sameClassTeachers.has(n)) tags += `<span class="badge bg-info ms-1" style="font-size:9px;">同班</span>`;
+            if (currentTeacherSubject && ALL_DATA.teacherSubjectMap[n] === currentTeacherSubject) tags += `<span class="badge bg-warning text-dark ms-1" style="font-size:9px;">同科</span>`;
+            // 🎯 加入 btn-sm 和 text-nowrap
+            return `<tr class="align-middle"><td class="small">${timeK}</td><td><span class="fw-bold text-primary">${n}</span>${tags}</td><td class="small text-muted">空堂</td><td class="text-end"><button class="btn btn-sm btn-primary py-0 text-nowrap" onclick="prepCompare('sub','${n}')">模擬</button></td></tr>`;
+          }).join('');
+        } else {
+          let dynamicClassSched = simulateClassWeek(cls, tarWIdx);
+          let myTargetWeekSched = simulateTeacherWeek(tName, tarWIdx);
+          let resList = [];
+          for (let k in dynamicClassSched) {
+            let node = dynamicClassSched[k];
+            if (node && node.teacher && node.teacher !== tName && node.teacher !== "無固定教師" && node.teacher !== "輪流") {
+               if (isCellAvailable(simulateTeacherWeek(node.teacher, curWIdx), timeK) && isCellAvailable(myTargetWeekSched, k)) {
+                  resList.push({ name: node.teacher, sub: node.sub, time: k });
+               }
+            }
+          }
+          // 調課 (swap) 的按鈕替換：
+          listBody.innerHTML = resList.map(r => 
+            // 🎯 加入 btn-sm 和 text-nowrap
+            `<tr><td class="small">${r.time}</td><td>${r.name}</td><td class="small text-muted">${r.sub}</td><td class="text-end"><button class="btn btn-sm btn-primary py-0 text-nowrap" onclick="prepCompare('swap','${r.name}','${r.time}','${r.sub}')">模擬</button></td></tr>`
+          ).join('');
+        }
+      } catch (e) { listBody.innerHTML = `<tr><td colspan="4" class="text-center text-danger p-3 small">計算錯誤</td></tr>`; }
+      if (listBody.innerHTML === "") listBody.innerHTML = `<tr><td colspan="4" class="p-3 text-center text-muted small">無可用對象</td></tr>`;
+    }
+
+    function prepCompare(mode, targetT, tarTime = "", tarSub = "") {
+      const curWIdx = parseInt(document.getElementById('weekSelector').value);
+      const tarWIdx = parseInt(CURRENT_MATCH_MODE === 'swap' ? document.getElementById('swapWeekSelector').value : curWIdx);
+      const curWeekSchedA = simulateTeacherWeek(CLICKED_DATA.teacher, curWIdx);
+      const subjectA = curWeekSchedA[CLICKED_DATA.timeKey]?.sub || "彈性學習";
+      PENDING_DATA = { mode, leaveTeacher: CLICKED_DATA.teacher, subTeacher: targetT, cls: CLICKED_DATA.cls, subject: subjectA, date: CLICKED_DATA.date, timeKey: CLICKED_DATA.timeKey, note: "" };
+      const feeSel = document.getElementById('adjFee'); feeSel.innerHTML = "";
+      if (mode === 'sub') {
+        const attr = CLICKED_DATA.rawAttr || "";// 🎯 新增預設空選項
+        feeSel.add(new Option("請選擇...", "", true, true));
+        feeSel.options[0].disabled = true; // 設為不可選
+        if (attr.includes("兼課") || attr.includes("輔導") || attr.includes("實支")) { feeSel.add(new Option("自費代課", "自費代課")); feeSel.add(new Option("學校移撥", "學校移撥")); }
+        else { feeSel.add(new Option("自費代課", "自費代課")); feeSel.add(new Option("公費代課", "公費代課")); }
+        document.getElementById('feeArea').style.display = 'block';
+      } else { feeSel.add(new Option("不用", "不用")); document.getElementById('feeArea').style.display = 'none'; }
+      if (mode === 'swap') {
+        const dIdxB = ['一','二','三','四','五'].indexOf(tarTime[0]), dB = WEEK_LIST[tarWIdx].dates[dIdxB];
+        Object.assign(PENDING_DATA, { teacherA: CLICKED_DATA.teacher, teacherB: targetT, dateA: CLICKED_DATA.date, timeA: CLICKED_DATA.timeKey, subA: subjectA, dateB: dB, timeB: tarTime, subB: tarSub });
+        document.getElementById('adjDateBDisplay').value = `${WEEK_LIST[tarWIdx].label} (${dB})`;
+        document.getElementById('dateBArea').style.display = 'block';
+      } else { document.getElementById('dateBArea').style.display = 'none'; }
+      const cleanNameA = CLICKED_DATA.teacher.split(/[&/]/).map(n => n.trim()).join(" & ");
+      const cleanNameB = targetT.split(/[&/]/).map(n => n.trim()).join(" & ");
+      document.getElementById('tAName').innerText = `👤 ${cleanNameA} (${WEEK_LIST[tarWIdx].label})`;
+      document.getElementById('tBName').innerText = `👤 ${cleanNameB} (${WEEK_LIST[curWIdx].label})`;
+      document.getElementById('tAGridMini').innerHTML = generateComparisonMiniHtml(simulateTeacherWeek(CLICKED_DATA.teacher, tarWIdx), CLICKED_DATA.timeKey, PENDING_DATA.timeB, CLICKED_DATA.cls, WEEK_LIST[tarWIdx].dates);
+      document.getElementById('tBGridMini').innerHTML = generateComparisonMiniHtml(simulateTeacherWeek(targetT, curWIdx), PENDING_DATA.timeB, CLICKED_DATA.timeKey, CLICKED_DATA.cls, WEEK_LIST[curWIdx].dates);
+      new bootstrap.Modal(document.getElementById('compareModal')).show();
+    }
+
+    function generateComparisonMiniHtml(s, oldT, newT, cls, hDates) {
+      let sc = JSON.parse(JSON.stringify(s)), h = `<tr class="day-header" style="height:35px; font-size:12px;"><th></th>`;
+      delete sc[oldT]; if(newT) sc[newT] = { cls: cls, isNew: true }; 
+      ['一','二','三','四','五'].forEach((d, i) => { h += `<th><span style="font-size:9px; font-weight:normal;">${hDates[i]?hDates[i].split('/').slice(1).join('/'):""}</span><br>${d}</th>`; });
+      for (let p = 1; p <= 8; p++) {
+        let rs = (p === 4) ? 'border-bottom: 2px solid #333 !important;' : '';
+        h += `<tr><td class="period-header" style="width:25px; font-size:11px; ${rs}">${p}</td>`;
+        ['一','二','三','四','五'].forEach(d => {
+          let it = sc[d+p], v = "", sty = "";
+          if (it) {
+            if (it.isNew) { v = it.cls || ""; sty = "background-color:#ffff00;border:2px solid #ffc107;font-weight:bold;color:#000;"; }
+            else if (it.type === 'sub_out' || it.type === 'swap_out') { v = '異動'; sty = "background-color:#e9ecef;color:#adb5bd;"; }
+            else { v = it.cls || ""; sty = "background-color:#e7f1ff;color:#0d6efd;"; }
+          }
+          h += `<td class="text-center align-middle border" style="${sty} font-size:11px; height:35px; ${rs}">${v}</td>`;
+        });
+        h += `</tr>`;
+      }
+      return h;
+    }
+
+    function executeSubmit() {
+      // 🎯 1. 檢查假別是否有選
+      const reasonVal = document.getElementById('adjReason').value;
+      if (!reasonVal) {
+        alert("⚠️ 請選擇「原因 / 假別」後再提交！");
+        return; // 終止執行，不送出
+      }
+      PENDING_DATA.reason = reasonVal;
+      
+      // 🎯 2. 如果是代課，檢查鐘點費是否有選
+      if (PENDING_DATA.mode === 'sub') {
+        const feeVal = document.getElementById('adjFee').value;
+        if (!feeVal) {
+          alert("⚠️ 請選擇「鐘點費」類別後再提交！");
+          return; // 終止執行，不送出
+        }
+        PENDING_DATA.subFee = feeVal;
+      }
+      
+      PENDING_DATA.note = document.getElementById('adjNote').value || ""; 
+      
+      showLoading(true, "正在寫入...");
+      api("submit", [PENDING_DATA]).then(res => {
+        showLoading(false);
+        if (res.success) {
+          bootstrap.Modal.getInstance(document.getElementById('compareModal')).hide();
+          alert(`申請成功！單號：${res.serial}\n請受邀教師查看 Email 並確認。`);
+          loadWeeklySchedule();
+        } else {
+          alert("失敗: " + res.error);
+        }
+      }).catch(err => { showLoading(false); alert("失敗: " + err.message); });
+    }
+
+    function simulateClassWeek(clsName, weekIdx) {
+      let baseSched = ALL_DATA.classData[clsName]?.schedule || {};
+      let schedule = {};
+      const weekIdxInt = parseInt(weekIdx), weekNum = weekIdxInt + 1, weekDates = WEEK_LIST[weekIdxInt].dates, isEven = (weekNum % 2 === 0);
+      for (let k in baseSched) {
+        let parts = baseSched[k].split('<br><small>'), sub = parts[0], teacherRaw = parts[1] ? parts[1].replace('</small>', '') : "", teacher = teacherRaw.trim();
+        if (k.includes("8")) {
+          if (teacherRaw.includes("/")) { let tParts = teacherRaw.split("/"); teacher = isEven ? (tParts[1] || tParts[0]) : tParts[0]; }
+          if (sub.includes("/")) { let subParts = sub.split("/"); let targetSub = isEven ? (subParts[1] || subParts[0]) : subParts[0]; sub = targetSub.replace("單", "").replace("雙", ""); } 
+          else if (sub.includes("單") || sub.includes("雙")) { let regex = isEven ? /雙([^單雙\s/]+)/ : /單([^單雙\s/]+)/, match = sub.match(regex); sub = match ? match[1] : sub.replace(/[單雙]/g, ""); }
+        }
+        schedule[k] = { sub: sub.trim(), teacher: teacher.trim() };
+      }
+      // 🎯 空白日期隱藏（國小版：移除原高中「高三畢業動態隱藏」）
+      ['一','二','三','四','五'].forEach((d, i) => {
+        // 🎯 如果該天沒有日期，直接清空整天課表 (適用於所有班級)
+        if (!weekDates[i] || weekDates[i].trim() === "") {
+          for (let p = 1; p <= 8; p++) delete schedule[d + p];
+          return;
+        }
+      });
+      
+      for (let sN in ALL_DATA.elasticData.teacher) {
+        let tMap = ALL_DATA.elasticData.teacher[sN];
+        for (let tN in tMap) {
+          if (!tN || tN.length > 3 || tN.includes("無固定")) continue;
+          let entry = tMap[tN].find(it => String(it.w).replace(/[^\d]/g, "") == String(weekNum) && it.val.trim() == clsName.trim());
+          if (entry) schedule[entry.d + entry.p] = { sub: "彈性學習", teacher: tN };
+        }
+      }
+      const validStatus =["教師皆確認可出單", "可出單", "已出單"];
+      
+      // 🎯 修正：先處理調課，再處理代課
+      WEEKLY_CHANGES.allSwap.forEach(r => { 
+        if (r[5] === clsName && validStatus.includes(r[12])) { 
+          if (weekDates.includes(r[9])) schedule[r[10]] = { sub: r[8], teacher: r[2] }; 
+          if (weekDates.includes(r[6])) schedule[r[7]] = { sub: r[11], teacher: r[3] }; 
+        } 
+      });
+      
+      WEEKLY_CHANGES.allSub.forEach(r => { 
+        if (weekDates.includes(r[7]) && r[5] === clsName && validStatus.includes(r[10])) {
+          if (schedule[r[8]]) schedule[r[8]].teacher = r[3]; 
+        }
+      });
+      
+      return schedule;
+    }
+
+    function resetSwapReference() { document.getElementById('swapReferenceList').innerHTML = '<tr><td colspan="4" class="text-center p-5 text-muted">💡 請選取左側課表</td></tr>'; }
+    function showLoading(s, m) { document.getElementById('loadMsg').innerText = m; document.getElementById('loading').style.display = s ? 'flex' : 'none'; }
+    function navTeacher(d) { if (!teacherChoices) return; let curVal = teacherChoices.getValue(true); let idx = TEACHER_LIST.indexOf(curVal) + d; if (idx >= 0 && idx < TEACHER_LIST.length) { teacherChoices.setChoiceByValue(TEACHER_LIST[idx]); loadWeeklySchedule(); } }
+  </script>
+</body>
+</html>
