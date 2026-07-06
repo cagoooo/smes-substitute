@@ -424,15 +424,16 @@
     }
 
     // --- 1. 全域變數定義 (完整保留並新增) ---
-    let USER, WEEK_LIST, TEACHER_LIST, CURRENT_WEEK_DATES, ALL_DATA, WEEKLY_CHANGES, FULL_CHANGES, TODAY_STR;
+    let USER, WEEK_LIST, TEACHER_LIST, CURRENT_WEEK_DATES, ALL_DATA, WEEKLY_CHANGES, FULL_CHANGES, TODAY_STR, FEE_CATEGORIES = [];
     let CURRENT_MATCH_MODE = 'sub', CLICKED_DATA = {}, PENDING_DATA = null, teacherChoices = null;
 
     function initSystem(res) {
         USER = res.user;
         WEEK_LIST = res.weeks; 
         TEACHER_LIST = res.teacherList;
-        ALL_DATA = res.baseData; 
+        ALL_DATA = res.baseData;
         TODAY_STR = res.todayStr;
+        FEE_CATEGORIES = res.feeCategories || [];
 
         document.getElementById('userBadge').innerText = `👤 ${USER.name} (${USER.role})`;
         document.getElementById('logoutBtn').style.display = 'inline-block';
@@ -893,11 +894,15 @@
       PENDING_DATA = { mode, leaveTeacher: CLICKED_DATA.teacher, subTeacher: targetT, cls: CLICKED_DATA.cls, subject: subjectA, date: CLICKED_DATA.date, timeKey: CLICKED_DATA.timeKey, note: "" };
       const feeSel = document.getElementById('adjFee'); feeSel.innerHTML = "";
       if (mode === 'sub') {
-        const attr = CLICKED_DATA.rawAttr || "";// 🎯 新增預設空選項
+        // 🎯 鐘點費類別改由後端「系統設定」提供（管理員自訂）；未設定時給預設兩類別
         feeSel.add(new Option("請選擇...", "", true, true));
-        feeSel.options[0].disabled = true; // 設為不可選
-        if (attr.includes("兼課") || attr.includes("輔導") || attr.includes("實支")) { feeSel.add(new Option("自費代課", "自費代課")); feeSel.add(new Option("學校移撥", "學校移撥")); }
-        else { feeSel.add(new Option("自費代課", "自費代課")); feeSel.add(new Option("公費代課", "公費代課")); }
+        feeSel.options[0].disabled = true;
+        const cats = (FEE_CATEGORIES && FEE_CATEGORIES.length) ? FEE_CATEGORIES
+          : [{ name: "公費代課" }, { name: "自費代課" }];
+        cats.forEach(c => {
+          const label = (c.rate ? `${c.name}（${c.rate}元/節）` : c.name);
+          feeSel.add(new Option(label, c.name));
+        });
         document.getElementById('feeArea').style.display = 'block';
       } else { feeSel.add(new Option("不用", "不用")); document.getElementById('feeArea').style.display = 'none'; }
       if (mode === 'swap') {

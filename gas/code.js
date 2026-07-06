@@ -21,6 +21,7 @@ const CONFIG = {
   sheetWeeks: "週次對照表",
   sheetSub: "代課紀錄表",
   sheetSwap: "調課紀錄表",
+  sheetSettings: "系統設定",
   DAYS: ["一", "二", "三", "四", "五"],
   // 🎯 新增流程控制常量
   STATUS_PENDING: "待受邀人確認",
@@ -469,13 +470,14 @@ const todayStr = Utilities.formatDate(checkDate, timezone, "yyyy/MM/dd");
     return { index: i, label: `第 ${r[0]} 週`, range: dateRange, dates: weekDates };
   });
 
-  return { 
-    user, 
-    weeks, 
-    teacherList: getAllTeacherNames(), 
+  return {
+    user,
+    weeks,
+    teacherList: getAllTeacherNames(),
     initialWeekIndex,
     baseData: getAllInitData(),
-    todayStr 
+    feeCategories: getFeeSettings_(),   // 💰 代課鐘點費類別（前端下拉用）
+    todayStr
   };
 }
 
@@ -987,6 +989,31 @@ function sendAdminDirectEmail(data, serial) {
 function notifyAdmin(message) {
   sendGoogleChatMessage(message);
   sendLineBotMessage(message);
+}
+
+/**
+ * 💰 讀「系統設定」工作表的代課類別與費率。找不到表時退回預設兩類別。
+ * 回傳 [{ name, rate, payer }]（只含啟用的）。
+ */
+function getFeeSettings_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(CONFIG.sheetSettings);
+  const def = typeof getSubFeePerPeriod_ === "function" ? getSubFeePerPeriod_() : 0;
+  const fallback = [
+    { name: "公費代課", rate: def, payer: "學校經費" },
+    { name: "自費代課", rate: def, payer: "請假教師" }
+  ];
+  if (!sh) return fallback;
+  const data = sh.getDataRange().getDisplayValues();
+  const list = [];
+  for (let i = 1; i < data.length; i++) {
+    const name = String(data[i][0] || "").trim();
+    if (!name) continue;
+    if (String(data[i][3] || "Y").trim().toUpperCase() === "N") continue; // 未啟用
+    const rate = parseInt(String(data[i][1] || "").replace(/[^\d]/g, ""), 10) || 0;
+    list.push({ name: name, rate: rate, payer: String(data[i][2] || "").trim() });
+  }
+  return list.length ? list : fallback;
 }
 
 /**

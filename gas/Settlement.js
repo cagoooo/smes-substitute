@@ -68,11 +68,18 @@ function parseSettleRange_(input) {
   return null;
 }
 
-/** 核心彙整：讀代課紀錄表 → 過濾區間與狀態 → 分組統計 */
+/** 核心彙整：讀代課紀錄表 → 過濾區間與狀態 → 依「系統設定」的類別費率統計 */
 function buildSettlement_(startMs, endMs) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const data = ss.getSheetByName(CONFIG.sheetSub).getDataRange().getDisplayValues();
-  const fee = getSubFeePerPeriod_();
+
+  // 🎯 從「系統設定」讀各代課類別的單價（元/節）；未設定的類別退回預設單價
+  const cats = getFeeSettings_();
+  const rateMap = {}; cats.forEach(c => { rateMap[c.name] = c.rate; });
+  const defRate = getSubFeePerPeriod_();
+  const rateOf = (cat) => (rateMap[cat] != null ? rateMap[cat] : defRate);
+  // 「由請假教師支付」的類別（供自費對帳）：payer 標示請假教師，或名稱含「自費」
+  const selfPayCats = new Set(cats.filter(c => c.payer === "請假教師" || /自費/.test(c.name)).map(c => c.name));
 
   // 代課紀錄表欄位: [0]是否出單 [1]單號 [2]請假教師 [3]代課教師 [4]假別 [5]班級 [6]科目 [7]日期 [8]節次 [9]鐘點 [10]狀態 [11]備註
   const records = [];
@@ -90,23 +97,24 @@ function buildSettlement_(startMs, endMs) {
     });
   }
 
-  // 1. 代課教師應領總表
-  const byTeacher = {};
+  // 1. 代課教師應領總表（各類別節數動態統計）
+  const byTeacher = {}; // name -> { 類別: 節數 }
   records.forEach(rec => {
-    if (!byTeacher[rec.subT]) byTeacher[rec.subT] = { 公費代課: 0, 學校移撥: 0, 自費代課: 0, 其他: 0 };
-    const key = byTeacher[rec.subT].hasOwnProperty(rec.feeType) ? rec.feeType : "其他";
-    byTeacher[rec.subT][key]++;
+    if (!byTeacher[rec.subT]) byTeacher[rec.subT] = {};
+    const cat = rec.feeType || "（未填）";
+    byTeacher[rec.subT][cat] = (byTeacher[rec.subT][cat] || 0) + 1;
   });
 
-  // 2. 自費代課對帳（請假教師 → 代課教師）
+  // 2. 自費代課對帳（請假教師 → 代課教師，含應付金額）
   const selfPaid = {};
-  records.filter(rec => rec.feeType === "自費代課").forEach(rec => {
+  records.filter(rec => selfPayCats.has(rec.feeType)).forEach(rec => {
     const key = rec.leaveT + "→" + rec.subT;
-    if (!selfPaid[key]) selfPaid[key] = { leaveT: rec.leaveT, subT: rec.subT, count: 0 };
+    if (!selfPaid[key]) selfPaid[key] = { leaveT: rec.leaveT, subT: rec.subT, count: 0, amount: 0 };
     selfPaid[key].count++;
+    selfPaid[key].amount += rateOf(rec.feeType);
   });
 
-  return { records, byTeacher, selfPaid, fee, sheetName: "" };
+  return { records, byTeacher, selfPaid, rateOf, cats, sheetName: "" };
 }
 
 /** 將結算結果寫入報表工作表 */
@@ -117,27 +125,27 @@ function writeSettlementSheet_(result, range) {
   let sh = ss.getSheetByName(sheetName);
   if (sh) sh.clear(); else sh = ss.insertSheet(sheetName);
 
-  const fee = result.fee;
+  const rateOf = result.rateOf;
   const rows = [];
+  const rateNote = result.cats.map(c => `${c.name} ${c.rate || 0}元`).join("、") || "（尚未於「系統設定」設定費率）";
   rows.push([`💰 兼代課鐘點結算表（${range.label}）`, "", "", "", "", "", ""]);
-  rows.push([`結算時間：${Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), "yyyy/MM/dd HH:mm")}　鐘點費單價：${fee} 元/節（指令碼屬性 SUB_FEE_PER_PERIOD 可修改，請依現行支給標準確認）`, "", "", "", "", "", ""]);
+  rows.push([`結算時間：${Utilities.formatDate(new Date(), ss.getSpreadsheetTimeZone(), "yyyy/MM/dd HH:mm")}　各類別費率(元/節)：${rateNote}　※費率於「系統設定」工作表調整`, "", "", "", "", "", ""]);
   rows.push(["", "", "", "", "", "", ""]);
 
-  // --- 表一：代課教師應領總表 ---
+  // --- 表一：代課教師應領總表（各類別節數 + 依類別費率計算金額）---
   rows.push(["【表一】代課教師鐘點統計", "", "", "", "", "", ""]);
-  rows.push(["代課教師", "公費代課(節)", "學校移撥(節)", "自費代課(節)", "其他(節)", "合計節數", `應領金額(${fee}元/節)`]);
-  const t1Start = rows.length + 1;
+  rows.push(["代課教師", "各類別節數", "", "合計節數", "應領金額", "", ""]);
   const teacherNames = Object.keys(result.byTeacher).sort();
+  let grandTotalPeriods = 0, grandTotalAmount = 0;
   teacherNames.forEach(t => {
-    const c = result.byTeacher[t];
-    const total = c.公費代課 + c.學校移撥 + c.自費代課 + c.其他;
-    rows.push([t, c.公費代課, c.學校移撥, c.自費代課, c.其他, total, total * fee]);
+    const byCat = result.byTeacher[t];
+    const breakdown = Object.keys(byCat).map(cat => `${cat}×${byCat[cat]}`).join("、");
+    const total = Object.keys(byCat).reduce((a, cat) => a + byCat[cat], 0);
+    const amount = Object.keys(byCat).reduce((a, cat) => a + byCat[cat] * rateOf(cat), 0);
+    grandTotalPeriods += total; grandTotalAmount += amount;
+    rows.push([t, breakdown, "", total, amount, "", ""]);
   });
-  const t1Sum = teacherNames.reduce((acc, t) => {
-    const c = result.byTeacher[t];
-    return acc + c.公費代課 + c.學校移撥 + c.自費代課 + c.其他;
-  }, 0);
-  rows.push(["合計", "", "", "", "", t1Sum, t1Sum * fee]);
+  rows.push(["合計", "", "", grandTotalPeriods, grandTotalAmount, "", ""]);
   rows.push(["", "", "", "", "", "", ""]);
 
   // --- 表二：自費代課對帳表 ---
@@ -149,18 +157,18 @@ function writeSettlementSheet_(result, range) {
   } else {
     spKeys.forEach(k => {
       const s = result.selfPaid[k];
-      rows.push([s.leaveT, s.subT, s.count, s.count * fee, "", "", ""]);
+      rows.push([s.leaveT, s.subT, s.count, s.amount, "", "", ""]);
     });
   }
   rows.push(["", "", "", "", "", "", ""]);
 
-  // --- 表三：逐筆明細 ---
+  // --- 表三：逐筆明細（含單筆金額）---
   rows.push(["【表三】逐筆明細（供查核）", "", "", "", "", "", ""]);
-  rows.push(["日期", "節次", "班級/科目", "請假教師", "代課教師", "鐘點類別", "單號/假別"]);
+  rows.push(["日期", "節次", "班級/科目", "請假教師", "代課教師", "鐘點類別", "金額"]);
   result.records
     .sort((a, b) => new Date(a.date.replace(/\//g, "-")) - new Date(b.date.replace(/\//g, "-")))
     .forEach(rec => {
-      rows.push([rec.date, rec.time, `${rec.cls} ${rec.subject}`, rec.leaveT, rec.subT, rec.feeType, `${rec.serial}（${rec.reason}）`]);
+      rows.push([rec.date, rec.time, `${rec.cls} ${rec.subject}`, rec.leaveT, rec.subT, `${rec.feeType}（${rec.serial}）`, rateOf(rec.feeType)]);
     });
 
   sh.getRange(1, 1, rows.length, 7).setValues(rows);

@@ -43,6 +43,7 @@ function setupSmesTemplateCore_() {
   writeHoursSheet_(ss, plan);
   writeElasticSheets_(ss);
   writeRecordSheets_(ss);
+  writeSettingsSheet_(ss);
   ensureAppToken_();
 
   return "已重建 " + ss.getSheets().length + " 張工作表（班級 " + plan.classes.length + "、教師 " + plan.teachers.length + "）";
@@ -316,6 +317,28 @@ function writeElasticSheets_(ss) {
     sh.getRange(1, 4).setValue("← 若有全校彈性課程輪替需求，D 欄起每欄填一位教師姓名；否則整張留空即可");
     sh.setFrozenRows(1);
   });
+}
+
+/** ⚙️ 系統設定：代課鐘點費類別與費率（管理員可自行增刪修改） */
+function writeSettingsSheet_(ss) {
+  const sh = resetSheet_(ss, "系統設定");
+  const rows = [
+    ["代課類別", "單價(元/節)", "由誰支付", "啟用(Y/N)"],
+    ["公費代課", "", "學校經費", "Y"],
+    ["自費代課", "", "請假教師", "Y"],
+    ["學校移撥", "", "學校經費", "Y"]
+  ];
+  sh.getRange(1, 1, rows.length, 4).setValues(rows);
+  sh.getRange(1, 1, 1, 4).setFontWeight("bold").setBackground("#e8f0fe");
+  sh.getRange("B2:B").setNumberFormat("@");
+  // 說明列
+  sh.getRange(6, 1).setValue("說明：");
+  sh.getRange(7, 1).setValue("1. 「單價」請填國小實際代課鐘點費（元/節），空白視為 0，請依現行支給標準填寫。");
+  sh.getRange(8, 1).setValue("2. 類別可自行增列或刪除；「由誰支付」填『請假教師』者會列入自費對帳表。");
+  sh.getRange(9, 1).setValue("3. 「啟用」填 N 可暫時停用某類別（前端下拉不顯示、結算仍會用其費率）。");
+  sh.getRange(6, 1, 4, 1).setFontColor("#64748b");
+  sh.setColumnWidth(1, 160); sh.setColumnWidth(3, 120);
+  sh.setFrozenRows(1);
 }
 
 /** 📋 代課／調課紀錄表（空白，只留表頭） */
