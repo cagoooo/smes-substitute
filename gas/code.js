@@ -36,11 +36,6 @@ const CONFIG = {
 
 // 1. 網頁入口：一律轉址到 GitHub Pages 前端（信件確認參數原樣帶過去）
 function doGet(e) {
-  // 🧰 臨時設定端點（設定後端 OAUTH_CLIENT_ID，值寫死於程式碼；用完即移除並重部署）
-  if (e && e.parameter.action === "__initcfg") {
-    PropertiesService.getScriptProperties().setProperty("OAUTH_CLIENT_ID", "495024952462-50atnhe2kdiun5fpdfq6dqq4d76n59oj.apps.googleusercontent.com");
-    return ContentService.createTextOutput("cfg set: OAUTH_CLIENT_ID");
-  }
   let qs = "";
   if (e && e.parameter) {
     const keep = ["action", "serial", "token"];
