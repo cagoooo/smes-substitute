@@ -55,6 +55,10 @@
      .tag-gray { background: #64748b; color: white; } /* 🎯 新增：深灰色標籤供調出使用 */
     .match-filter { background: #f8f9fa; border-bottom: 1px solid #ddd; padding: 10px; }
     .choices__inner { background-color: #fff; min-height: 45px; border-radius: 5px; }
+    /* 🎯 修正：教師搜尋下拉選單需疊在下方媒合卡片之上 */
+    .choices { position: relative; }
+    .choices.is-open { z-index: 1100; }
+    .choices__list--dropdown, .choices__list[aria-expanded] { z-index: 1100; background-color: #fff; }
     .opacity-50 { opacity: 0.5; }
   </style>
 </head>
