@@ -1,0 +1,14 @@
+{
+  "name": "smes-substitute-tools",
+  "private": true,
+  "type": "module",
+  "description": "石門國小調代課系統 圖示/OG 圖生成工具（僅開發用）",
+  "scripts": {
+    "gen:icons": "node scripts/generate-icons.mjs",
+    "gen:og": "node scripts/generate-og.mjs"
+  },
+  "dependencies": {
+    "@napi-rs/canvas": "^1.0.2",
+    "png-to-ico": "^3.0.2"
+  }
+}

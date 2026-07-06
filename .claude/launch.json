@@ -1,0 +1,6 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    { "name": "docs-static", "runtimeExecutable": "npx", "runtimeArgs": ["-y", "serve", "docs", "-l", "4321"], "port": 4321 }
+  ]
+}

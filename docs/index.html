@@ -2,8 +2,37 @@
 <html lang="zh-Hant">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>石門國小調代課系統</title>
+  <meta name="description" content="桃園市龍潭區石門國民小學線上調代課系統：教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
+
+  <!-- favicon / app icon（相對路徑，子路徑部署也正確） -->
+  <meta name="theme-color" content="#2563eb">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <!-- Open Graph / FB / LINE（og:image 需絕對網址） -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
+  <meta property="og:title" content="石門國小線上調代課系統">
+  <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.06-1">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.06-1">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:type" content="image/png">
+  <meta property="og:image:alt" content="石門國小線上調代課系統">
+  <meta property="og:locale" content="zh_TW">
+  <meta property="og:site_name" content="石門國小調代課系統">
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="石門國小線上調代課系統">
+  <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
+  <meta name="twitter:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.06-1">
+
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
@@ -60,6 +89,35 @@
     .choices.is-open { z-index: 1100; }
     .choices__list--dropdown, .choices__list[aria-expanded] { z-index: 1100; background-color: #fff; }
     .opacity-50 { opacity: 0.5; }
+
+    /* 課表可橫向捲動，避免窄螢幕擠壓 */
+    .grid-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .grid-scroll .table-fixed { min-width: 460px; }
+
+    /* 📱 手機 / 小平板（直向）*/
+    @media (max-width: 768px) {
+      body { font-size: 15px; }
+      .navbar-brand.h1 { font-size: 1.05rem; }
+      .navbar .user-tag { font-size: 12px; padding: 4px 9px; }
+      /* 頂部控制列各欄間距 */
+      .row.align-items-center > [class^="col-"] { margin-bottom: 8px; }
+      /* 三欄改為堆疊後，卡片清單不要用 vh 計算高度（會變負值），改自然高度上限 */
+      .side-list-card { max-height: 56vh !important; }
+      /* 課表格子略縮，換行更好讀 */
+      .teacher-mini-cell { height: 54px !important; font-size: 13px; }
+      .cls-line { font-size: 15px; }
+      /* 對比 Modal 的雙欄改上下堆疊 */
+      #compareModal .modal-body .row.gx-3 > .col-6 { width: 100%; margin-bottom: 12px; }
+      /* 提交列的備註 + 按鈕在小螢幕改直向 */
+      #submitActionArea .d-flex { flex-direction: column; align-items: stretch; }
+      #submitActionArea .btn { white-space: normal !important; }
+    }
+
+    /* 📱 超窄手機（≤400px）*/
+    @media (max-width: 400px) {
+      .navbar-brand .text-info { display: none; } /* 隱藏「加入手機桌面教學」連結避免換行溢出 */
+      .teacher-mini-cell { font-size: 12px; }
+    }
   </style>
 </head>
 <body class="p-0">
@@ -127,7 +185,9 @@
             <span id="vFullTProfile" class="small text-warning"></span>
           </div>
           <div class="card-body p-1">
-            <table class="table table-bordered table-fixed m-0"><thead id="gridHeader"></thead><tbody id="tFullGrid"></tbody></table>
+            <div class="grid-scroll">
+              <table class="table table-bordered table-fixed m-0"><thead id="gridHeader"></thead><tbody id="tFullGrid"></tbody></table>
+            </div>
           </div>
         </div>
       </div>
@@ -962,6 +1022,43 @@
     function resetSwapReference() { document.getElementById('swapReferenceList').innerHTML = '<tr><td colspan="4" class="text-center p-5 text-muted">💡 請選取左側課表</td></tr>'; }
     function showLoading(s, m) { document.getElementById('loadMsg').innerText = m; document.getElementById('loading').style.display = s ? 'flex' : 'none'; }
     function navTeacher(d) { if (!teacherChoices) return; let curVal = teacherChoices.getValue(true); let idx = TEACHER_LIST.indexOf(curVal) + d; if (idx >= 0 && idx < TEACHER_LIST.length) { teacherChoices.setChoiceByValue(TEACHER_LIST[idx]); loadWeeklySchedule(); } }
+  </script>
+  <script>
+  (function(){
+    if(!('serviceWorker' in navigator)) return;
+    var APP_VERSION='2026.07.06-1';   // 與 sw.js 同步
+    var reloaded=false;
+    function showBar(waiting){
+      if(document.getElementById('sw-update-bar')) return;
+      var s=document.createElement('style');
+      s.textContent='#sw-update-bar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:9999;display:flex;align-items:center;gap:12px;background:#1e293b;color:#fff;padding:12px 16px;border-radius:14px;box-shadow:0 14px 34px -10px rgba(0,0,0,.55);font:14.5px system-ui,sans-serif;max-width:calc(100vw - 28px)}#sw-update-bar button{cursor:pointer;border:none;border-radius:9px;font-weight:700;font:inherit}#sw-go{background:linear-gradient(135deg,#60a5fa,#2563eb);color:#fff;padding:8px 15px}#sw-x{background:transparent;color:#94a3b8;padding:6px 9px}';
+      document.head.appendChild(s);
+      var b=document.createElement('div'); b.id='sw-update-bar'; b.setAttribute('role','status');
+      b.innerHTML='<span>✦ 系統有新版本</span><button id="sw-go">重新整理載入</button><button id="sw-x">✕</button>';
+      document.body.appendChild(b);
+      document.getElementById('sw-x').onclick=function(){ b.remove(); };
+      document.getElementById('sw-go').onclick=function(){ waiting ? waiting.postMessage({type:'SKIP_WAITING'}) : location.reload(); };
+    }
+    navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(reg){
+      if(reg.waiting && navigator.serviceWorker.controller) showBar(reg.waiting);
+      reg.addEventListener('updatefound',function(){
+        var nw=reg.installing; if(!nw) return;
+        nw.addEventListener('statechange',function(){
+          if(nw.state==='installed' && navigator.serviceWorker.controller) showBar(reg.waiting||nw);
+        });
+      });
+      setInterval(function(){ reg.update().catch(function(){}); }, 60000);
+    }).catch(function(){});
+    navigator.serviceWorker.addEventListener('controllerchange',function(){
+      if(reloaded) return; reloaded=true; location.reload();   // 旗標防無限重整
+    });
+    // 備胎：version.json 輪詢（SW 事件沒攔到也能提示）
+    function checkVer(){ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();})
+      .then(function(d){ if(d&&d.version&&d.version!==APP_VERSION) showBar(null); }).catch(function(){}); }
+    ['focus','online','pageshow'].forEach(function(ev){ window.addEventListener(ev,checkVer); });
+    document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') checkVer(); });
+    setTimeout(checkVer,8000); setInterval(checkVer,180000);
+  })();
   </script>
 </body>
 </html>
