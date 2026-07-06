@@ -70,7 +70,11 @@ function doPost(e) {
       "weekly":      function () { return getWeeklyDynamicData(parseInt(args[0], 10)); },
       "submit":      function () { return processAdjustmentFor_(args[0], email); },
       "confirmInfo": function () { return getConfirmInfo_(args[0], args[1], email); },
-      "confirm":     function () { return handleTeacherAdjustmentFor_(args[0], args[1], args[2], email); }
+      "confirm":     function () { return handleTeacherAdjustmentFor_(args[0], args[1], args[2], email); },
+      // 新增管理控制台 API (P1-1 & P1-2)
+      "getEmailList": function () { return getEmailListFor_(email); },
+      "updateEmailList": function () { return updateEmailListFor_(args[0], email); },
+      "getSettlementReport": function () { return getSettlementReport_(args[0], email); }
     };
     if (!API[req.fn]) throw new Error("未知的操作：" + req.fn);
     out = { result: API[req.fn]() };
@@ -78,12 +82,14 @@ function doPost(e) {
     out = { error: err.message };
     // 🔔 失敗通知（排除 UNAUTHENTICATED 這類正常的 token 過期，避免洗版）
     if (err.message !== "UNAUTHENTICATED") {
-      pushChatCard_("error", "系統發生錯誤", [
-        { label: "操作", text: fn },
-        { label: "帳號", text: email || "（未驗證）" },
-        { label: "錯誤訊息", text: err.message },
+      const stackStr = err.stack ? String(err.stack).slice(0, 700) : "無堆疊資訊";
+      pushChatCard_("error", "系統發生嚴重錯誤 (API 崩潰)", [
+        { label: "操作函數 (fn)", text: fn },
+        { label: "操作帳號", text: email || "（未驗證）" },
+        { label: "錯誤原因", text: err.message },
+        { label: "錯誤堆疊 (Stack)", text: stackStr },
         { label: "時間", text: nowStr_() }
-      ], "⚠️ 使用者操作時發生例外，請留意。");
+      ], "🚨 系統發生未預期異常，請資訊組長立即查看並排除。");
     }
   }
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
@@ -1232,5 +1238,73 @@ function getEmailData_() {
   const data = s.getDataRange().getDisplayValues();
   CacheHelper_.put(cacheKey, data, 7200);
   return data;
+}
+
+/**
+ * 🔑 安全查核：確認是否為管理員或行政
+ */
+function checkAdminOrStaff_(email) {
+  if (!email) throw new Error("UNAUTHENTICATED");
+  const emailData = getEmailData_();
+  for (let i = 1; i < emailData.length; i++) {
+    if (emailData[i][1].toLowerCase() === email.toLowerCase()) {
+      const role = emailData[i][2];
+      if (role === "管理員" || role === "行政") return;
+    }
+  }
+  throw new Error("無權限執行此操作。");
+}
+
+/**
+ * 🔑 取得教師 Email 授權清單
+ */
+function getEmailListFor_(email) {
+  checkAdminOrStaff_(email);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const s = ss.getSheetByName(CONFIG.sheetEmail);
+  if (!s) return [];
+  return s.getDataRange().getDisplayValues().slice(1);
+}
+
+/**
+ * 🔑 更新教師 Email 授權清單
+ */
+function updateEmailListFor_(list, email) {
+  checkAdminOrStaff_(email);
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const s = ss.getSheetByName(CONFIG.sheetEmail);
+  if (!s) throw new Error("找不到工作表：" + CONFIG.sheetEmail);
+  
+  s.clear();
+  s.appendRow(["姓名", "Email", "身份等級"]);
+  if (list && list.length > 0) {
+    s.getRange(2, 1, list.length, 3).setValues(list);
+  }
+  
+  const cacheKey = "smes_sub_cache_" + CONFIG.sheetEmail;
+  CacheService.getScriptCache().remove(cacheKey);
+  return { success: true };
+}
+
+/**
+ * 🔑 取得月結算統計資料
+ */
+function getSettlementReport_(input, email) {
+  checkAdminOrStaff_(email);
+  const range = parseSettleRange_(input);
+  if (!range) throw new Error("格式錯誤，請使用 yyyy/MM");
+  
+  const result = buildSettlement_(range.start, range.end);
+  const rateMap = {};
+  result.cats.forEach(function(c) { rateMap[c.name] = c.rate; });
+  
+  return {
+    label: range.label,
+    records: result.records,
+    byTeacher: result.byTeacher,
+    selfPaid: result.selfPaid,
+    rateMap: rateMap,
+    defRate: getSubFeePerPeriod_()
+  };
 }
 

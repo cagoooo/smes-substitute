@@ -16,8 +16,6 @@ function onOpen() {
           .addItem('2-2. 生成「班級聯」', 'printSwapClass')
           .addItem('2-3. 生成「留存聯」', 'printSwapArchive'))
       .addSeparator()
-      .addItem('3. 💰 兼代課鐘點結算', 'generateSettlementReport')
-      .addSeparator()
       .addItem('🌐 開啟管理網頁', 'openWebDialog')
       .addSeparator()
       .addItem('🔑 授權教學組長為管理員', 'addYunChingAsAdmin')

@@ -18,8 +18,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-1">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-1">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-2">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-2">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -31,7 +31,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="og-preview.png?v=2026.07.07-1">
+  <meta name="og-preview.png?v=2026.07.07-2">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
@@ -161,9 +161,21 @@
   </a>
         </span><div class="d-flex align-items-center gap-2">
         <div id="userBadge" class="user-tag">身分驗證中...</div>
+        <button id="adminConsoleBtn" onclick="openAdminConsole()" class="btn btn-sm btn-info text-white fw-bold" style="display:none; font-size:13px; padding:3px 14px; border-radius:20px;">⚙️ 系統管理</button>
         <button id="logoutBtn" onclick="logout()" class="btn btn-sm btn-outline-light" style="display:none; font-size:13px; padding:3px 14px; border-radius:20px;">登出</button>
       </div></div>
   </nav>
+
+  <!-- 📱 PWA 自訂桌面安裝橫幅 (P1-3) -->
+  <div id="pwa-install-banner" class="alert alert-primary alert-dismissible fade show m-3 shadow-sm" role="alert" style="display: none; border-radius: 12px; font-size: 14px; border: 0; background: linear-gradient(135deg, #eff6ff, #dbeafe); color: #1e3a8a;">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <span>📱 <b>將調代課系統加到手機/電腦桌面</b>，下次點選即可像獨立 App 一樣快速啟動與操作！</span>
+      <div class="d-flex gap-2">
+        <button onclick="triggerPwaInstall()" class="btn btn-sm btn-primary fw-bold py-1 px-3" style="border-radius:20px; font-size:12.5px; background:#2563eb; border:0;">立即加到桌面</button>
+        <button type="button" class="btn-close position-static p-1" onclick="closePwaBanner()" aria-label="Close"></button>
+      </div>
+    </div>
+  </div>
 
   <div class="container-fluid mt-2 px-3">
     <!-- 頂部控制列 -->
@@ -364,6 +376,108 @@
     @media print { .no-print { display: none; } }
   </style>
 
+  <!-- ⚙️ 系統管理控制台 Modal (P1-1 & P1-2) -->
+  <div class="modal fade" id="adminConsoleModal" tabindex="-1" aria-labelledby="adminConsoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+      <div class="modal-content" style="border-radius: 16px; border: 0; box-shadow: 0 10px 30px rgba(0,0,0,0.15);">
+        <div class="modal-header bg-dark text-white" style="border-top-left-radius: 16px; border-top-right-radius: 16px;">
+          <h5 class="modal-title fw-bold" id="adminConsoleModalLabel">⚙️ 調代課系統管理控制台</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <!-- 頁籤導覽 -->
+          <ul class="nav nav-tabs mb-3" id="adminTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active fw-bold text-secondary" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-pane" type="button" role="tab" aria-controls="email-pane" aria-selected="true">🔑 教師 Email 授權名單</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link fw-bold text-secondary" id="settle-tab" data-bs-toggle="tab" data-bs-target="#settle-pane" type="button" role="tab" aria-controls="settle-pane" aria-selected="false">💰 兼代課鐘點月結算</button>
+            </li>
+          </ul>
+          
+          <div class="tab-content" id="adminTabContent">
+            <!-- 🔑 分頁 1：教師 Email 授權名單 -->
+            <div class="tab-pane fade show active" id="email-pane" role="tabpanel" aria-labelledby="email-tab">
+              <div class="card p-3 mb-3 bg-light border-0" style="border-radius: 10px;">
+                <h6 class="fw-bold text-secondary mb-2">➕ 新增 / 編輯教師授權</h6>
+                <form id="adminEmailForm" onsubmit="event.preventDefault(); addOrUpdateUser();">
+                  <div class="row g-2 align-items-end">
+                    <div class="col-md-3">
+                      <label class="small fw-bold text-muted mb-1">姓名</label>
+                      <input type="text" id="adminUserName" class="form-control form-control-sm" required placeholder="如：張老師">
+                    </div>
+                    <div class="col-md-4">
+                      <label class="small fw-bold text-muted mb-1">學校 Email (Google 帳號)</label>
+                      <input type="email" id="adminUserEmail" class="form-control form-control-sm" required placeholder="name@mail2.smes.tyc.edu.tw">
+                    </div>
+                    <div class="col-md-3">
+                      <label class="small fw-bold text-muted mb-1">身分權限</label>
+                      <select id="adminUserRole" class="form-select form-select-sm">
+                        <option value="教師">教師 (僅查看/送出自己的單)</option>
+                        <option value="行政">行政 (可切換查詢他人單與出單)</option>
+                        <option value="管理員">管理員 (擁有完整設定與行政權限)</option>
+                      </select>
+                    </div>
+                    <div class="col-md-2">
+                      <button type="submit" class="btn btn-sm btn-primary w-100 fw-bold" style="background:#2563eb; border:0;">💾 儲存</button>
+                    </div>
+                  </div>
+                </form>
+              </div>
+              
+              <div class="table-responsive" style="max-height: 380px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+                <table class="table table-sm table-striped table-hover align-middle mb-0" style="font-size:13.5px;">
+                  <thead class="table-dark sticky-top">
+                    <tr>
+                      <th class="ps-3">姓名</th>
+                      <th>Email 信箱</th>
+                      <th>身分角色</th>
+                      <th class="text-center" style="width: 120px;">操作</th>
+                    </tr>
+                  </thead>
+                  <tbody id="adminEmailTableBody">
+                    <tr>
+                      <td colspan="4" class="text-center text-muted py-4">
+                        <div class="spinner-border spinner-border-sm text-primary me-2"></div>讀取中...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <!-- 💰 分頁 2：兼代課鐘點月結算 -->
+            <div class="tab-pane fade" id="settle-pane" role="tabpanel" aria-labelledby="settle-tab">
+              <div class="p-3 bg-light rounded mb-3" style="border-radius: 10px;">
+                <div class="row align-items-center g-3">
+                  <div class="col-md-7">
+                    <label class="small fw-bold text-secondary mb-1">📅 選擇結算月份</label>
+                    <div class="input-group input-group-sm">
+                      <select id="settleMonthSelect" class="form-select" style="max-width: 240px;"></select>
+                      <button onclick="previewSettlement()" class="btn btn-dark fw-bold">🔍 預覽結算</button>
+                    </div>
+                  </div>
+                  <div class="col-md-5 text-md-end text-start">
+                    <button onclick="downloadSettlementExcel()" id="btnDownloadExcel" class="btn btn-success btn-sm fw-bold" style="display:none; background:#16a34a; border:0;">
+                      📥 下載 兼代課結算 Excel
+                    </button>
+                  </div>
+                </div>
+              </div>
+              
+              <div id="settlePreviewArea" class="border rounded p-3 bg-white" style="display:none; max-height: 380px; overflow-y: auto; font-size:13px; border-radius: 8px;">
+                <!-- 預覽資料渲染處 -->
+              </div>
+              <div id="settleEmptyArea" class="text-center text-muted py-5 border rounded bg-white" style="border-radius: 8px;">
+                請點選上方「預覽結算」以查詢代課節數與金額統計
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
   
@@ -437,6 +551,14 @@
     }
 
     // --- 1. 全域變數定義 (完整保留並新增) ---
+    // 匯出 Word 單據與 Excel 報表配置 (P0-2)
+    const EXPORT_CONFIG = {
+      titleSub: "桃園市石門國小教師代課通知單", // 代課單自訂標題
+      titleSwap: "桃園市石門國小教師調課通知單", // 調課單自訂標題
+      fileName: "石門國小調代課單據匯出",      // 下載檔名前綴
+      fontFamily: "DFKai-SB, 標楷體, PMingLiU, 新細明體, sans-serif" // 公文標準標楷體字型
+    };
+
     let USER, WEEK_LIST, TEACHER_LIST, CURRENT_WEEK_DATES, ALL_DATA, WEEKLY_CHANGES, FULL_CHANGES, TODAY_STR, FEE_CATEGORIES = [];
     let CURRENT_MATCH_MODE = 'sub', CLICKED_DATA = {}, PENDING_DATA = null, teacherChoices = null;
 
@@ -450,6 +572,9 @@
 
         document.getElementById('userBadge').innerText = `👤 ${USER.name} (${USER.role})`;
         document.getElementById('logoutBtn').style.display = 'inline-block';
+        if (USER.role === "管理員" || USER.role === "行政") {
+          document.getElementById('adminConsoleBtn').style.display = 'inline-block';
+        }
         const wSel = document.getElementById('weekSelector'), swSel = document.getElementById('swapWeekSelector');
         res.weeks.forEach(w => { 
           let opt = `${w.label} (${w.range})`; 
@@ -858,45 +983,45 @@
         }
         
         docsHtml += `
-        <div style="width: 100%; border: 2px solid #000; padding: 15px; margin-bottom: 20px; font-family: 'Microsoft JhengHei', sans-serif;">
-          <h2 style="text-align: center; margin-top: 0;">石門國小教師代課通知單</h2>
+        <div style="width: 100%; border: 2px solid #000; padding: 15px; margin-bottom: 20px; font-family: ${EXPORT_CONFIG.fontFamily};">
+          <h2 style="text-align: center; margin-top: 0; font-family: ${EXPORT_CONFIG.fontFamily};">${EXPORT_CONFIG.titleSub}</h2>
           <table style="width: 100%; border-collapse: collapse; border: 1px solid #000;">
             <tr>
-              <th style="border: 1px solid #000; padding: 8px; width: 20%; background-color: #f2f2f2;">單號</th>
+              <th style="border: 1px solid #000; padding: 8px; width: 20%; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">單號</th>
               <td style="border: 1px solid #000; padding: 8px; width: 30%;">${serial}</td>
-              <th style="border: 1px solid #000; padding: 8px; width: 20%; background-color: #f2f2f2;">狀態</th>
+              <th style="border: 1px solid #000; padding: 8px; width: 20%; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">狀態</th>
               <td style="border: 1px solid #000; padding: 8px; width: 30%;">${status}</td>
             </tr>
             <tr>
-              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">請假教師</th>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">請假教師</th>
               <td style="border: 1px solid #000; padding: 8px;">${leaveTeacher}</td>
-              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">代課教師</th>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">代課教師</th>
               <td style="border: 1px solid #000; padding: 8px;">${subTeacher}</td>
             </tr>
             <tr>
-              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">日期與節次</th>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">日期與節次</th>
               <td style="border: 1px solid #000; padding: 8px;">${dateStr} (${timeKey})</td>
-              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">原因/假別</th>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">原因/假別</th>
               <td style="border: 1px solid #000; padding: 8px;">${reason}</td>
             </tr>
             <tr>
-              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">班級與科目</th>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">班級與科目</th>
               <td style="border: 1px solid #000; padding: 8px;">${cls} / ${subject}</td>
-              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">代課鐘點費</th>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">代課鐘點費</th>
               <td style="border: 1px solid #000; padding: 8px;">${fee} 元/節</td>
             </tr>
             <tr>
-              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">備註</th>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">備註</th>
               <td colspan="3" style="border: 1px solid #000; padding: 8px;">${note}</td>
             </tr>
           </table>
           <br>
-          <table style="width: 100%; text-align: center; border: 0;">
+          <table style="width: 100%; text-align: center; border: 0; font-family: ${EXPORT_CONFIG.fontFamily};">
             <tr>
-              <td style="width: 25%; font-size:13px;">請假人：___________</td>
-              <td style="width: 25%; font-size:13px;">代課人：___________</td>
-              <td style="width: 25%; font-size:13px;">教學組長：___________</td>
-              <td style="width: 25%; font-size:13px;">教務主任：___________</td>
+              <td style="width: 25%; font-size:13px; font-family: ${EXPORT_CONFIG.fontFamily};">請假人：___________</td>
+              <td style="width: 25%; font-size:13px; font-family: ${EXPORT_CONFIG.fontFamily};">代課人：___________</td>
+              <td style="width: 25%; font-size:13px; font-family: ${EXPORT_CONFIG.fontFamily};">教學組長：___________</td>
+              <td style="width: 25%; font-size:13px; font-family: ${EXPORT_CONFIG.fontFamily};">教務主任：___________</td>
             </tr>
           </table>
         </div>
@@ -936,41 +1061,41 @@
         }
         
         docsHtml += `
-        <div style="width: 100%; border: 2px solid #000; padding: 15px; margin-bottom: 20px; font-family: 'Microsoft JhengHei', sans-serif;">
-          <h2 style="text-align: center; margin-top: 0;">石門國小教師調課通知單</h2>
+        <div style="width: 100%; border: 2px solid #000; padding: 15px; margin-bottom: 20px; font-family: ${EXPORT_CONFIG.fontFamily};">
+          <h2 style="text-align: center; margin-top: 0; font-family: ${EXPORT_CONFIG.fontFamily};">${EXPORT_CONFIG.titleSwap}</h2>
           <table style="width: 100%; border-collapse: collapse; border: 1px solid #000;">
             <tr>
-              <th style="border: 1px solid #000; padding: 8px; width: 20%; background-color: #f2f2f2;">單號</th>
+              <th style="border: 1px solid #000; padding: 8px; width: 20%; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">單號</th>
               <td style="border: 1px solid #000; padding: 8px; width: 30%;">${serial}</td>
-              <th style="border: 1px solid #000; padding: 8px; width: 20%; background-color: #f2f2f2;">狀態</th>
+              <th style="border: 1px solid #000; padding: 8px; width: 20%; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">狀態</th>
               <td style="border: 1px solid #000; padding: 8px; width: 30%;">${status}</td>
             </tr>
             <tr>
-              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">調課教師 A</th>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">調課教師 A</th>
               <td style="border: 1px solid #000; padding: 8px;">${teacherA}</td>
-              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">調課教師 B</th>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">調課教師 B</th>
               <td style="border: 1px solid #000; padding: 8px;">${teacherB}</td>
             </tr>
             <tr>
-              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">調出節次 (A)</th>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">調出節次 (A)</th>
               <td style="border: 1px solid #000; padding: 8px;">${dateA} (${timeA}) / ${subA}<br><b>${cls}</b></td>
-              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">調入節次 (B)</th>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">調入節次 (B)</th>
               <td style="border: 1px solid #000; padding: 8px;">${dateB} (${timeB}) / ${subB}<br><b>${cls}</b></td>
             </tr>
             <tr>
-              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">調課原因</th>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">調課原因</th>
               <td style="border: 1px solid #000; padding: 8px;">${reason}</td>
-              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">備註</th>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2; font-family: ${EXPORT_CONFIG.fontFamily};">備註</th>
               <td style="border: 1px solid #000; padding: 8px;">${note}</td>
             </tr>
           </table>
           <br>
-          <table style="width: 100%; text-align: center; border: 0;">
+          <table style="width: 100%; text-align: center; border: 0; font-family: ${EXPORT_CONFIG.fontFamily};">
             <tr>
-              <td style="width: 25%; font-size:13px;">教師 A：___________</td>
-              <td style="width: 25%; font-size:13px;">教師 B：___________</td>
-              <td style="width: 25%; font-size:13px;">教學組長：___________</td>
-              <td style="width: 25%; font-size:13px;">教務主任：___________</td>
+              <td style="width: 25%; font-size:13px; font-family: ${EXPORT_CONFIG.fontFamily};">教師 A：___________</td>
+              <td style="width: 25%; font-size:13px; font-family: ${EXPORT_CONFIG.fontFamily};">教師 B：___________</td>
+              <td style="width: 25%; font-size:13px; font-family: ${EXPORT_CONFIG.fontFamily};">教學組長：___________</td>
+              <td style="width: 25%; font-size:13px; font-family: ${EXPORT_CONFIG.fontFamily};">教務主任：___________</td>
             </tr>
           </table>
         </div>
@@ -983,7 +1108,7 @@
         return;
       }
       
-      var header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><title>調代課單據匯出_" + targetMonth + "月</title><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom></w:WordDocument></xml></head><body>";
+      var header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><title>調代課單據匯出_" + targetMonth + "月</title><style>body, p, div, th, td { font-family: " + EXPORT_CONFIG.fontFamily + "; } table { border-collapse: collapse; width: 100%; } th, td { border: 1px solid #000000; padding: 8px; } th { background-color: #f2f2f2; font-weight: bold; }</style><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom></w:WordDocument></xml></head><body>";
       var footer = "</body></html>";
       var fullHtml = header + docsHtml + footer;
       
@@ -991,7 +1116,7 @@
       var url = URL.createObjectURL(blob);
       var a = document.createElement('a');
       a.href = url;
-      a.download = "石門國小調代課單據匯出_" + targetMonth + "月.doc";
+      a.download = EXPORT_CONFIG.fileName + "_" + targetMonth + "月.doc";
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -1238,7 +1363,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.07.07-1';   // 與 sw.js 同步
+    var APP_VERSION='2026.07.07-2';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;
@@ -1311,6 +1436,309 @@
     document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') checkVer(); });
     setTimeout(checkVer,8000); setInterval(checkVer,180000);
   })();
+
+  // --- ⚙️ 系統管理控制台與 PWA 安裝 JavaScript 實作 (P1-1, P1-2, P1-3) ---
+  var ADMIN_EMAIL_LIST = [];
+  var CURRENT_SETTLE_DATA = null;
+  var deferredPrompt = null;
+
+  // 1. PWA 安裝監聽與橫幅控制
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    deferredPrompt = e;
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.style.display = 'block';
+  });
+
+  async function triggerPwaInstall() {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const choiceResult = await deferredPrompt.userChoice;
+    if (choiceResult.outcome === 'accepted') {
+      console.log('使用者安裝了 PWA');
+    }
+    deferredPrompt = null;
+    closePwaBanner();
+  }
+
+  function closePwaBanner() {
+    const banner = document.getElementById('pwa-install-banner');
+    if (banner) banner.style.display = 'none';
+  }
+
+  // 2. 開啟管理控制台
+  function openAdminConsole() {
+    var modal = new bootstrap.Modal(document.getElementById('adminConsoleModal'));
+    modal.show();
+    loadAdminEmailList();
+    initSettleMonths();
+  }
+
+  // 3. 讀寫與渲染授權教師清單 (P1-1)
+  async function loadAdminEmailList() {
+    const tbody = document.getElementById('adminEmailTableBody');
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4"><div class="spinner-border spinner-border-sm text-primary me-2"></div>讀取名單中...</td></tr>';
+    try {
+      const res = await api("getEmailList");
+      ADMIN_EMAIL_LIST = res;
+      renderAdminEmailTable();
+    } catch (err) {
+      tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-4">載入失敗：${err.message}</td></tr>`;
+    }
+  }
+
+  function renderAdminEmailTable() {
+    const tbody = document.getElementById('adminEmailTableBody');
+    if (!ADMIN_EMAIL_LIST || ADMIN_EMAIL_LIST.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4">名單為空</td></tr>';
+      return;
+    }
+    let html = "";
+    ADMIN_EMAIL_LIST.forEach((r, idx) => {
+      const name = r[0];
+      const email = r[1];
+      const role = r[2];
+      html += `
+        <tr>
+          <td class="ps-3"><b>${name}</b></td>
+          <td><code>${email}</code></td>
+          <td><span class="badge ${role==='管理員'?'bg-danger':(role==='行政'?'bg-warning text-dark':'bg-secondary')}">${role}</span></td>
+          <td class="text-center">
+            <button onclick="editUserPrompt(${idx})" class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size:11px;">編輯</button>
+            <button onclick="deleteUser(${idx})" class="btn btn-xs btn-outline-danger py-0 px-2" style="font-size:11px;">刪除</button>
+          </td>
+        </tr>
+      `;
+    });
+    tbody.innerHTML = html;
+  }
+
+  async function addOrUpdateUser() {
+    const name = document.getElementById('adminUserName').value.trim();
+    const email = document.getElementById('adminUserEmail').value.trim().toLowerCase();
+    const role = document.getElementById('adminUserRole').value;
+    if (!name || !email) return;
+    
+    // 排他去重，實現覆寫/更新
+    const newList = ADMIN_EMAIL_LIST.filter(r => r[1].toLowerCase().trim() !== email);
+    newList.push([name, email, role]);
+    
+    showLoading(true, "儲存教師資料中...");
+    try {
+      await api("updateEmailList", [newList]);
+      showLoading(false);
+      document.getElementById('adminEmailForm').reset();
+      loadAdminEmailList();
+      alert("儲存成功！");
+    } catch (err) {
+      showLoading(false);
+      alert("儲存失敗：" + err.message);
+    }
+  }
+
+  async function deleteUser(idx) {
+    const name = ADMIN_EMAIL_LIST[idx][0];
+    if (!confirm(`確定要刪除「${name}」的系統授權嗎？`)) return;
+    
+    const email = ADMIN_EMAIL_LIST[idx][1].toLowerCase().trim();
+    const newList = ADMIN_EMAIL_LIST.filter(r => r[1].toLowerCase().trim() !== email);
+    
+    showLoading(true, "刪除教師資料中...");
+    try {
+      await api("updateEmailList", [newList]);
+      showLoading(false);
+      loadAdminEmailList();
+      alert("刪除成功！");
+    } catch (err) {
+      showLoading(false);
+      alert("刪除失敗：" + err.message);
+    }
+  }
+
+  function editUserPrompt(idx) {
+    const r = ADMIN_EMAIL_LIST[idx];
+    document.getElementById('adminUserName').value = r[0];
+    document.getElementById('adminUserEmail').value = r[1];
+    document.getElementById('adminUserRole').value = r[2];
+    document.getElementById('adminUserName').focus();
+  }
+
+  // 4. 鐘點月結算 (P1-2)
+  function initSettleMonths() {
+    const sel = document.getElementById('settleMonthSelect');
+    if (sel.options.length > 0) return;
+    
+    const curY = new Date().getFullYear();
+    for (let y = curY; y >= curY - 1; y--) {
+      for (let m = 12; m >= 1; m--) {
+        const mm = m < 10 ? "0" + m : m;
+        const optVal = `${y}/${mm}`;
+        sel.add(new Option(optVal + " 兼代課結算", optVal));
+      }
+    }
+  }
+
+  async function previewSettlement() {
+    const month = document.getElementById('settleMonthSelect').value;
+    const preview = document.getElementById('settlePreviewArea');
+    const empty = document.getElementById('settleEmptyArea');
+    const downloadBtn = document.getElementById('btnDownloadExcel');
+    
+    preview.style.display = 'none';
+    empty.style.display = 'block';
+    empty.innerHTML = '<div class="spinner-border spinner-border-sm text-primary me-2"></div>正在結算鐘點費中...';
+    downloadBtn.style.display = 'none';
+    
+    try {
+      const res = await api("getSettlementReport", [month]);
+      CURRENT_SETTLE_DATA = res;
+      
+      if (!res.records || res.records.length === 0) {
+        empty.innerHTML = `查無 ${month} 月份已確認的代課紀錄。`;
+        return;
+      }
+      
+      empty.style.display = 'none';
+      preview.style.display = 'block';
+      downloadBtn.style.display = 'inline-block';
+      
+      let html = `<h6>📅 <b>${res.label} 兼代課結算統計預覽</b></h6>`;
+      html += `<table class="table table-bordered table-sm mt-2" style="font-size:12.5px;">`;
+      html += `<thead class="table-light"><tr><th>代課教師</th><th>統計明細</th><th>合計節數</th><th>應領金額</th></tr></thead><tbody>`;
+      
+      let totalPeriods = 0, totalAmt = 0;
+      const teachers = Object.keys(res.byTeacher).sort();
+      teachers.forEach(t => {
+        const byCat = res.byTeacher[t];
+        const detail = Object.keys(byCat).map(cat => `${cat}×${byCat[cat]}`).join("、");
+        const periods = Object.keys(byCat).reduce((a, cat) => a + byCat[cat], 0);
+        const rateOf = (cat) => (res.rateMap[cat] != null ? res.rateMap[cat] : res.defRate);
+        const amt = Object.keys(byCat).reduce((a, cat) => a + byCat[cat] * rateOf(cat), 0);
+        totalPeriods += periods;
+        totalAmt += amt;
+        html += `<tr><td><b>${t}</b></td><td>${detail}</td><td>${periods}</td><td>${amt} 元</td></tr>`;
+      });
+      html += `<tr class="table-secondary"><td><b>合計</b></td><td></td><td><b>${totalPeriods}</b></td><td><b>${totalAmt} 元</b></td></tr>`;
+      html += `</tbody></table>`;
+      
+      const selfPayKeys = Object.keys(res.selfPaid);
+      if (selfPayKeys.length > 0) {
+        html += `<h6 class="mt-3">自費代課對帳（請假教師付費）</h6>`;
+        html += `<table class="table table-bordered table-sm" style="font-size:12.5px;">`;
+        html += `<thead class="table-light"><tr><th>付款教師 (請假)</th><th>收款教師 (代課)</th><th>代課節數</th><th>應付金額</th></tr></thead><tbody>`;
+        selfPayKeys.sort().forEach(k => {
+          const item = res.selfPaid[k];
+          html += `<tr><td>${item.leaveT}</td><td>${item.subT}</td><td>${item.count} 節</td><td>${item.amount} 元</td></tr>`;
+        });
+        html += `</tbody></table>`;
+      }
+      
+      preview.innerHTML = html;
+    } catch (err) {
+      empty.innerHTML = `<span class="text-danger">結算失敗：${err.message}</span>`;
+    }
+  }
+
+  function downloadSettlementExcel() {
+    if (!CURRENT_SETTLE_DATA) return;
+    const res = CURRENT_SETTLE_DATA;
+    
+    let excelHtml = `
+    <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+    <head>
+      <meta http-equiv="content-type" content="application/vnd.ms-excel; charset=UTF-8">
+      <style>
+        table { border-collapse: collapse; }
+        td, th { border: 1px solid #000000; padding: 6px; font-family: ${EXPORT_CONFIG.fontFamily}; font-size: 11pt; }
+        th { background-color: #f2f2f2; font-weight: bold; text-align: center; }
+        .header-title { font-size: 16pt; font-weight: bold; text-align: center; height: 40px; }
+        .section-title { font-size: 12pt; font-weight: bold; background-color: #e2e8f0; height: 30px; }
+      </style>
+    </head>
+    <body>
+      <table>
+        <tr><td colspan="4" class="header-title">💰 兼代課鐘點費結算統計表（${res.label}）</td></tr>
+        <tr><td colspan="4" style="text-align:right;">結算時間：${new Date().toLocaleDateString()}</td></tr>
+        <tr><td></td></tr>
+        <tr><td colspan="4" class="section-title">【表一】代課教師鐘點統計</td></tr>
+        <tr>
+          <th>代課教師</th>
+          <th>各類別節數</th>
+          <th>合計節數</th>
+          <th>應領金額</th>
+        </tr>
+    `;
+    
+    let totalPeriods = 0, totalAmt = 0;
+    const teachers = Object.keys(res.byTeacher).sort();
+    teachers.forEach(t => {
+      const byCat = res.byTeacher[t];
+      const detail = Object.keys(byCat).map(cat => `${cat}×${byCat[cat]}`).join("、");
+      const periods = Object.keys(byCat).reduce((a, cat) => a + byCat[cat], 0);
+      const rateOf = (cat) => (res.rateMap[cat] != null ? res.rateMap[cat] : res.defRate);
+      const amt = Object.keys(byCat).reduce((a, cat) => a + byCat[cat] * rateOf(cat), 0);
+      totalPeriods += periods;
+      totalAmt += amt;
+      excelHtml += `
+        <tr>
+          <td style="text-align:center; font-weight:bold;">${t}</td>
+          <td>${detail}</td>
+          <td style="text-align:center;">${periods}</td>
+          <td style="text-align:right;">${amt}</td>
+        </tr>
+      `;
+    });
+    
+    excelHtml += `
+        <tr style="background-color: #f8fafc; font-weight:bold;">
+          <td style="text-align:center;">合計</td>
+          <td></td>
+          <td style="text-align:center;">${totalPeriods}</td>
+          <td style="text-align:right;">${totalAmt}</td>
+        </tr>
+        <tr><td></td></tr>
+    `;
+    
+    const selfPayKeys = Object.keys(res.selfPaid);
+    if (selfPayKeys.length > 0) {
+      excelHtml += `
+        <tr><td colspan="4" class="section-title">【表二】自費代課對帳（請假教師付費）</td></tr>
+        <tr>
+          <th>付款教師 (請假)</th>
+          <th>收款教師 (代課)</th>
+          <th>代課節數</th>
+          <th>應付金額</th>
+        </tr>
+      `;
+      selfPayKeys.sort().forEach(k => {
+        const item = res.selfPaid[k];
+        excelHtml += `
+          <tr>
+            <td style="text-align:center;">${item.leaveT}</td>
+            <td style="text-align:center;">${item.subT}</td>
+            <td style="text-align:center;">${item.count}</td>
+            <td style="text-align:right;">${item.amount}</td>
+          </tr>
+        `;
+      });
+    }
+    
+    excelHtml += `
+      </table>
+    </body>
+    </html>
+    `;
+    
+    const blob = new Blob(['\ufeff' + excelHtml], { type: 'application/vnd.ms-excel;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `兼代課鐘點費結算_${res.label.replace('/', '')}.xls`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
   </script>
 </body>
 </html>
