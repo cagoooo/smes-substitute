@@ -990,6 +990,27 @@ function notifyAdmin(message) {
 }
 
 /**
+ * 🧰 批次重建 Email對照表：2 位管理員 + 傳入的教師名單（身分=教師），並逐人產生登入代碼。
+ * rows: [[姓名, 信箱], ...]
+ */
+function importRoster_(rows) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(CONFIG.sheetEmail) || ss.insertSheet(CONFIG.sheetEmail);
+  sh.clear();
+  // 三欄即可（身分驗證讀 姓名/信箱/身分；Google 登入不需登入代碼欄）
+  const out = [["姓名", "信箱", "身分"]];
+  out.push(["阿凱老師", "ipad@mail2.smes.tyc.edu.tw", "管理員"]);
+  out.push(["系統維護", "cagooo@gmail.com", "管理員"]);
+  (rows || []).forEach(function (r) {
+    out.push([String(r[0]).trim(), String(r[1]).trim(), "教師"]);
+  });
+  sh.getRange(1, 1, out.length, 3).setValues(out);
+  sh.getRange(1, 1, 1, 3).setFontWeight("bold").setBackground("#e8f0fe");
+  sh.setFrozenRows(1);
+  return { ok: true, teachers: (rows || []).length, totalRows: out.length - 1 };
+}
+
+/**
  * 🔔 送 cardsV2 狀態卡到 Google Chat（success/error/info）。best-effort，不擋主流程。
  * @param status  'success' | 'error' | 'info'
  * @param title   卡片標題
