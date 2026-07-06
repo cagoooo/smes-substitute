@@ -110,7 +110,7 @@ function verifyIdToken_(idToken) {
  */
 function findUserByEmail_(email) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const emailData = ss.getSheetByName(CONFIG.sheetEmail).getDataRange().getDisplayValues();
+  const emailData = getEmailData_();
   for (let i = 1; i < emailData.length; i++) {
     if (emailData[i][1].toLowerCase() === email) {
       return {
@@ -425,7 +425,7 @@ function getSystemInitDataFor_(email) {
   }
 
   // 2. 名單校核 (Email對照表)
-  const emailData = ss.getSheetByName(CONFIG.sheetEmail).getDataRange().getDisplayValues();
+  const emailData = getEmailData_();
   let user = null;
   for (let i = 1; i < emailData.length; i++) {
     if (emailData[i][1].toLowerCase() === email.toLowerCase()) {
@@ -604,6 +604,17 @@ function parseSingleDouble(rawSub, rawCls, isEven) {
 function getAllInitData() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const getSafe = (n, isT = false) => {
+    const cacheable = [CONFIG.sheetTeacher, CONFIG.sheetHours];
+    if (cacheable.includes(n)) {
+      const cacheKey = "smes_sub_cache_" + n;
+      let cached = CacheHelper_.get(cacheKey);
+      if (cached) return cached;
+      
+      let s = ss.getSheetByName(n); if (!s) return [];
+      let data = isT ? s.getDataRange().getDisplayValues() : s.getDataRange().getDisplayValues().slice(1);
+      CacheHelper_.put(cacheKey, data, 7200);
+      return data;
+    }
     let s = ss.getSheetByName(n); if (!s) return [];
     return isT ? s.getDataRange().getDisplayValues() : s.getDataRange().getDisplayValues().slice(1);
   };
@@ -642,6 +653,11 @@ function getAllInitData() {
 
 function fetchElasticSheet(sheet) {
   if (!sheet) return null;
+  const sheetName = sheet.getName();
+  const cacheKey = "smes_sub_cache_" + sheetName;
+  let cached = CacheHelper_.get(cacheKey);
+  if (cached) return cached;
+
   const data = sheet.getDataRange().getDisplayValues();
   const headers = data[0].map(h => h.trim());
   let sheetMap = {};
@@ -656,6 +672,8 @@ function fetchElasticSheet(sheet) {
     }
     sheetMap[name] = list;
   }
+  
+  CacheHelper_.put(cacheKey, sheetMap, 7200);
   return sheetMap;
 }
 
@@ -1052,10 +1070,22 @@ function pushChatCard_(status, title, rows, note) {
     return { decoratedText: { topLabel: r.label, text: String(r.text == null ? "" : r.text), wrapText: true } };
   });
   if (note) widgets.push({ textParagraph: { text: note } });
-  const payload = { cardsV2: [{ cardId: "c-" + Date.now(), card: {
-    header: { title: icon + " " + title, subtitle: CONFIG.SCHOOL_SHORT + "調代課系統" },
-    sections: [{ widgets: widgets }]
-  } }] };
+  
+  // P0-1: 組合手機端推播通知的 fallback 預覽文字 text
+  let fallbackText = icon + " " + title;
+  if (rows && rows.length > 0) {
+    const details = rows.slice(0, 2).map(function (r) { return r.label + ": " + r.text; }).join(", ");
+    fallbackText += " (" + details + ")";
+  }
+  if (note) fallbackText += " — " + note;
+
+  const payload = {
+    text: fallbackText,
+    cardsV2: [{ cardId: "c-" + Date.now(), card: {
+      header: { title: icon + " " + title, subtitle: CONFIG.SCHOOL_SHORT + "調代課系統" },
+      sections: [{ widgets: widgets }]
+    } }]
+  };
   try {
     UrlFetchApp.fetch(webhook, {
       method: "post", contentType: "application/json; charset=UTF-8",
@@ -1158,3 +1188,49 @@ function sendLineBotMessage(message) {
     console.log("LINE Bot 傳送失敗：" + e.message);
   }
 }
+
+/**
+ * 📦 記憶體快取輔助模組 (CacheHelper_) (P0-2)
+ */
+const CacheHelper_ = {
+  get: function(key) {
+    try {
+      const cache = CacheService.getScriptCache();
+      const val = cache.get(key);
+      if (val) return JSON.parse(val);
+    } catch (e) {
+      console.log("快取讀取失敗：" + e.message);
+    }
+    return null;
+  },
+  put: function(key, obj, ttlSeconds) {
+    try {
+      const cache = CacheService.getScriptCache();
+      const str = JSON.stringify(obj);
+      if (str.length < 90000) {
+        cache.put(key, str, ttlSeconds || 7200); // 預設快取 2 小時
+      } else {
+        console.log("快取資料過大，略過寫入：" + key + " (長度: " + str.length + ")");
+      }
+    } catch (e) {
+      console.log("快取寫入失敗：" + e.message);
+    }
+  }
+};
+
+/**
+ * 🔎 讀取或載入 Email 對照表快取資料 (P0-2)
+ */
+function getEmailData_() {
+  const cacheKey = "smes_sub_cache_" + CONFIG.sheetEmail;
+  let cached = CacheHelper_.get(cacheKey);
+  if (cached) return cached;
+  
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const s = ss.getSheetByName(CONFIG.sheetEmail);
+  if (!s) return [];
+  const data = s.getDataRange().getDisplayValues();
+  CacheHelper_.put(cacheKey, data, 7200);
+  return data;
+}
+

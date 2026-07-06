@@ -20,9 +20,64 @@ function onOpen() {
       .addSeparator()
       .addItem('🌐 開啟管理網頁', 'openWebDialog')
       .addSeparator()
+      .addItem('🔑 授權教學組長為管理員', 'addYunChingAsAdmin')
+      .addSeparator()
+      .addItem('🧹 清除系統快取 (課表變更時執行)', 'clearSystemCache')
+      .addSeparator()
       .addItem('🧰 初始化石門國小空白模板', 'setupSmesTemplate')
       .addToUi();
 }
+
+/**
+ * 🔑 一鍵授權教學組長為管理員並清除快取 (P1)
+ */
+function addYunChingAsAdmin() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(CONFIG.sheetEmail);
+  const data = sheet.getDataRange().getDisplayValues();
+  
+  const email = "yunching33@mail2.smes.tyc.edu.tw".toLowerCase().trim();
+  let found = false;
+  
+  // 檢查是否已在名單內，若是則直接更新權限
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][1].toLowerCase().trim() === email) {
+      sheet.getRange(i + 1, 3).setValue("管理員");
+      found = true;
+      break;
+    }
+  }
+  
+  // 若不在名單內，則追加一行
+  if (!found) {
+    sheet.appendRow(["教學組長", "yunching33@mail2.smes.tyc.edu.tw", "管理員"]);
+  }
+  
+  // 🧹 立即清除 Email 快取，讓更新在網頁端立即生效
+  const cacheKey = "smes_sub_cache_" + CONFIG.sheetEmail;
+  CacheService.getScriptCache().remove(cacheKey);
+  
+  SpreadsheetApp.getUi().alert("🔑 授權成功！\n\n已將教學組長 (yunching33@mail2.smes.tyc.edu.tw) 設定為系統「管理員」。\n名單快取已同步重新整理，該教師此時重新載入調代課系統網頁，即可擁有完整的管理權限。");
+}
+
+/**
+ * 🧹 手動清除系統中的靜態課表與教師名單快取 (P0-2)
+ */
+function clearSystemCache() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const keys = [
+    "smes_sub_cache_" + CONFIG.sheetEmail,
+    "smes_sub_cache_" + CONFIG.sheetTeacher,
+    "smes_sub_cache_" + CONFIG.sheetHours
+  ];
+  CONFIG.elasticTeacherSheets.forEach(s => keys.push("smes_sub_cache_" + s));
+  
+  const cache = CacheService.getScriptCache();
+  cache.removeAll(keys);
+  
+  SpreadsheetApp.getUi().alert("🧹 系統快取已順利清除！\n\n基本課表、Email名單與彈性課程資料已重新載入。\n下次載入或重新整理網頁時將自動套用最新資料。");
+}
+
 
 function openWebDialog() {
   const url = CONFIG.FRONTEND_URL;

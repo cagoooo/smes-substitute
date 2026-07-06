@@ -43,6 +43,10 @@ clasp update-deployment <deploymentId> -V <版本號> -d "更新說明"
 
 ## 📅 更新日誌與開發進度表
 
+- **`[x]` (2026.07.06-8)**：實作新一輪 P0 安全防護與快取性能優化：
+  - 優化 Google Chat Webhook 推播 JSON Payload，最外層加入自動化預覽文字（fallbackText），解決手機推播通知只顯示「傳送了一個附件」的經典痛點。
+  - 在後端 Apps Script 中導入 `CacheService` 記憶體快取，快取 Email授權對照表、靜態教師課表、教學節數及彈性課程資料（快取 2 小時），大幅提升前端載入與課表切換速度。
+  - 於試算表自訂選單新增「🧹 清除系統快取 (課表變更時執行)」功能，供管理員隨時手動重新整理快取。
 - **`[x]` (2026.07.06-6)**：實作 P1 流程自動化與功能優化：
   - 新增 `scripts/bump-version.ps1` 本地端 PowerShell 一鍵自動升版、安全檢測與 git push 部署腳本。
   - 新增自訂 GitHub Actions 部署工作流與 Python 金鑰替換框架，實行安全零密鑰洩漏。
