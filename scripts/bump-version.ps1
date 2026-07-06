@@ -1,4 +1,8 @@
 # scripts/bump-version.ps1
+param (
+    [string]$notes = ""
+)
+
 # Get current date in yyyy.MM.dd format
 $today = Get-Date -Format "yyyy.MM.dd"
 $newVersion = ""
@@ -27,10 +31,13 @@ if (Test-Path $versionFile) {
 
 Write-Host "🚀 Preparing to bump version to: $newVersion" -ForegroundColor Cyan
 
-# 2. Ask for commit notes
-$notes = Read-Host "📝 Enter update notes (in English or Chinese)"
+# 2. Determine update notes
 if ([string]::IsNullOrEmpty($notes)) {
-    $notes = "Routine update and optimization"
+    # If not provided via param, ask interactively
+    $notes = Read-Host "📝 Enter update notes (in English or Chinese)"
+    if ([string]::IsNullOrEmpty($notes)) {
+        $notes = "Routine update and optimization"
+    }
 }
 
 # 3. Replace version in docs/index.html
@@ -82,14 +89,23 @@ Write-Host "✅ No API Key leaks found." -ForegroundColor Green
 # 7. Git commit & push
 Write-Host "📦 Git commit and push..." -ForegroundColor Yellow
 
-# 防止 PowerShell 傳遞給 git.exe 的中文參數與 Message 產生亂碼
-$OutputEncoding = [System.Text.Encoding]::UTF8
-[Console]::InputEncoding = [System.Text.Encoding]::UTF8
-[Console]::OutputEncoding = [System.Text.Encoding]::UTF8
+# Use Unicode code points for "✅升級 PWA 版本號為" to prevent script encoding issues in PowerShell 5.1
+$prefix = "$([char]0x2705)$([char]0x5347)$([char]0x7d1a) PWA $([char]0x7248)$([char]0x672c)$([char]0x865f)$([char]0x70ba)"
+$commitMsg = "$prefix $newVersion ($notes)"
+
+# Write commit message directly to a UTF-8 file (without BOM for git compatibility)
+# Using .NET File API to ensure pure UTF-8 encoding
+[System.IO.File]::WriteAllText("temp_commit_msg.txt", $commitMsg, [System.Text.Encoding]::UTF8)
 
 git add .
-$commitMsg = "✅升級 PWA 版本號為 $newVersion ($notes)"
-git commit -m $commitMsg
+# Commit using the message file
+git commit -F temp_commit_msg.txt
+
+# Clean up temporary file
+if (Test-Path "temp_commit_msg.txt") {
+    Remove-Item "temp_commit_msg.txt"
+}
+
 $env:GITHUB_TOKEN = "" # Clear invalid Token
 git push
 
