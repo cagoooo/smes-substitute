@@ -1041,7 +1041,24 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.07.06-3';   // 與 sw.js 同步
+    var APP_VERSION='2026.07.06-4';   // 與 sw.js 同步
+
+    // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
+    var expectedScope = new URL('./', location.href).href;
+    navigator.serviceWorker.getRegistrations().then(function(regs){
+      var poisoned = false;
+      regs.forEach(function(r){
+        if(r.scope !== expectedScope && expectedScope.indexOf(r.scope) === 0) {
+          console.warn('[SW] 偵測到 Scope 衝突之 Service Worker 註冊，正在解除註冊自癒:', r.scope);
+          r.unregister();
+          poisoned = true;
+        }
+      });
+      if(poisoned) {
+        setTimeout(function(){ location.reload(); }, 300);
+      }
+    }).catch(function(){});
+
     var reloaded=false;
     function showBar(waiting){
       if(document.getElementById('sw-update-bar')) return;
@@ -1065,7 +1082,11 @@
       setInterval(function(){ reg.update().catch(function(){}); }, 60000);
     }).catch(function(){});
     navigator.serviceWorker.addEventListener('controllerchange',function(){
-      if(reloaded) return; reloaded=true; location.reload();   // 旗標防無限重整
+      // P0-2: 使用 sessionStorage 旗標防止跨頁面重載循環
+      if (sessionStorage.getItem('sw_reloaded')) return;
+      sessionStorage.setItem('sw_reloaded', '1');
+      setTimeout(function(){ sessionStorage.removeItem('sw_reloaded'); }, 2000);
+      location.reload();
     });
     // 備胎：version.json 輪詢（SW 事件沒攔到也能提示）
     function checkVer(){ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();})
