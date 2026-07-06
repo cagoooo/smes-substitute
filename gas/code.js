@@ -58,10 +58,11 @@ function doGet(e) {
  * 身分由 Google 登入（GIS）的 id_token 驗證取得，不依賴 Session.getActiveUser()。
  */
 function doPost(e) {
-  let out;
+  let out, fn = "?", email = null;
   try {
     const req = JSON.parse(e.postData.contents);
-    const email = verifyIdToken_(req.idToken);
+    fn = req.fn || "?";
+    email = verifyIdToken_(req.idToken);
     const args = req.args || [];
     const API = {
       "init":        function () { return getSystemInitDataFor_(email); },
@@ -74,6 +75,15 @@ function doPost(e) {
     out = { result: API[req.fn]() };
   } catch (err) {
     out = { error: err.message };
+    // 🔔 失敗通知（排除 UNAUTHENTICATED 這類正常的 token 過期，避免洗版）
+    if (err.message !== "UNAUTHENTICATED") {
+      pushChatCard_("error", "系統發生錯誤", [
+        { label: "操作", text: fn },
+        { label: "帳號", text: email || "（未驗證）" },
+        { label: "錯誤訊息", text: err.message },
+        { label: "時間", text: nowStr_() }
+      ], "⚠️ 使用者操作時發生例外，請留意。");
+    }
   }
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(ContentService.MimeType.JSON);
 }
@@ -343,6 +353,13 @@ function handleTeacherAdjustmentFor_(action, serial, token, currentUserEmail) {
       return { success: true };
     }
   } catch (e) {
+    pushChatCard_("error", "調代課確認失敗", [
+      { label: "單號", text: serial },
+      { label: "動作", text: action === "accept" ? "同意" : "拒絕" },
+      { label: "執行者", text: currentUserEmail || "?" },
+      { label: "錯誤訊息", text: e.message },
+      { label: "時間", text: nowStr_() }
+    ], "⚠️ 受邀教師確認單據時失敗。");
     return { success: false, error: e.message };
   } finally {
     lock.releaseLock();
@@ -397,6 +414,7 @@ function getSystemInitDataFor_(email) {
     const allowList = CONFIG.ALLOWED_DOMAINS.split(",").map(d => d.trim().toLowerCase()).filter(d => d);
     const userDomain = email.includes("@") ? email.split("@").pop().toLowerCase() : "";
     if (allowList.length > 0 && !allowList.includes(userDomain)) {
+      maybeNotifyDenied_(email, "網域不符（非學校帳號）");
       return {
         error: "DOMAIN_WRONG",
         email: email,
@@ -423,12 +441,16 @@ function getSystemInitDataFor_(email) {
 
   // 3. 如果 Email 正確但不在名單內
   if (!user) {
-    return { 
-      error: "NOT_IN_LIST", 
-      email: email, 
-      msg: "您的帳號不在授權名單內，請聯繫教學組確認權限。" 
+    maybeNotifyDenied_(email, "不在授權名單內");
+    return {
+      error: "NOT_IN_LIST",
+      email: email,
+      msg: "您的帳號不在授權名單內，請聯繫教學組確認權限。"
     };
   }
+
+  // ✅ 成功通知：偵測到「首次登入」的新使用者才推播（避免每次登入洗版）
+  maybeNotifyNewUser_(user);
 
   // --- 原有的週次與資料抓取邏輯 (保持不變) ---
   const timezone = ss.getSpreadsheetTimeZone();
@@ -693,8 +715,23 @@ function processAdjustmentFor_(data, email) {
       }
     }
 
+    // ✅ 成功通知：有人成功送出一筆調代課申請
+    pushChatCard_("success", (data.mode === 'swap' ? "新調課申請" : "新代課申請"), [
+      { label: "單號", text: serial },
+      { label: "申請人", text: (data.mode === 'swap' ? data.teacherA : data.leaveTeacher) + "（" + userAuth.name + "）" },
+      { label: "狀態", text: status },
+      { label: "時間", text: nowStr_() }
+    ], userAuth.isAdmin ? "🟢 教學組直接確認，可出單。" : "🟡 已寄邀請信給受邀教師，待對方確認。");
+
     return { success: true, serial: serial };
-  } catch (e) { return { success: false, error: e.message }; }
+  } catch (e) {
+    pushChatCard_("error", "調代課申請失敗", [
+      { label: "操作者", text: email },
+      { label: "錯誤訊息", text: e.message },
+      { label: "時間", text: nowStr_() }
+    ], "⚠️ 使用者送出調代課申請時失敗。");
+    return { success: false, error: e.message };
+  }
 }
 
 function getNextSerial(type) {
@@ -950,6 +987,71 @@ function sendAdminDirectEmail(data, serial) {
 function notifyAdmin(message) {
   sendGoogleChatMessage(message);
   sendLineBotMessage(message);
+}
+
+/**
+ * 🔔 送 cardsV2 狀態卡到 Google Chat（success/error/info）。best-effort，不擋主流程。
+ * @param status  'success' | 'error' | 'info'
+ * @param title   卡片標題
+ * @param rows    [{label, text}] 明細
+ * @param note    底部說明段落
+ */
+function pushChatCard_(status, title, rows, note) {
+  const webhook = PropertiesService.getScriptProperties().getProperty("GOOGLE_CHAT_WEBHOOK");
+  if (!webhook) return;
+  const icon = status === "success" ? "✅" : (status === "error" ? "❌" : "ℹ️");
+  const widgets = (rows || []).map(function (r) {
+    return { decoratedText: { topLabel: r.label, text: String(r.text == null ? "" : r.text), wrapText: true } };
+  });
+  if (note) widgets.push({ textParagraph: { text: note } });
+  const payload = { cardsV2: [{ cardId: "c-" + Date.now(), card: {
+    header: { title: icon + " " + title, subtitle: CONFIG.SCHOOL_SHORT + "調代課系統" },
+    sections: [{ widgets: widgets }]
+  } }] };
+  try {
+    UrlFetchApp.fetch(webhook, {
+      method: "post", contentType: "application/json; charset=UTF-8",
+      payload: JSON.stringify(payload), muteHttpExceptions: true
+    });
+  } catch (e) { console.log("Google Chat 卡片傳送失敗：" + e.message); }
+}
+
+/** 目前時間字串（Asia/Taipei） */
+function nowStr_() {
+  return Utilities.formatDate(new Date(), "Asia/Taipei", "yyyy/MM/dd HH:mm");
+}
+
+/** 只在「首次登入」推播新使用者成功通知（KNOWN_USERS 去重，避免每次登入洗版） */
+function maybeNotifyNewUser_(user) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const known = props.getProperty("KNOWN_USERS") || "\n";
+    const mark = "\n" + user.email.toLowerCase() + "\n";
+    if (known.indexOf(mark) !== -1) return;              // 已通知過
+    props.setProperty("KNOWN_USERS", known + user.email.toLowerCase() + "\n");
+    pushChatCard_("success", "新使用者首次登入", [
+      { label: "姓名", text: user.name },
+      { label: "身分", text: user.role },
+      { label: "帳號", text: user.email },
+      { label: "時間", text: nowStr_() }
+    ], "🎉 有新使用者成功註冊並開始使用調代課系統。");
+  } catch (e) { console.log(e.message); }
+}
+
+/** 有帳號嘗試登入但無權限（網域不符／不在名單）→ 推播一次（去重，方便管理員決定是否加入名單） */
+function maybeNotifyDenied_(email, reason) {
+  try {
+    const props = PropertiesService.getScriptProperties();
+    const seen = props.getProperty("DENIED_SEEN") || "\n";
+    const mark = "\n" + String(email).toLowerCase() + "\n";
+    if (seen.indexOf(mark) !== -1) return;
+    props.setProperty("DENIED_SEEN", seen + String(email).toLowerCase() + "\n");
+    pushChatCard_("info", "有帳號嘗試登入但無權限", [
+      { label: "帳號", text: email },
+      { label: "原因", text: reason },
+      { label: "時間", text: nowStr_() }
+    ], "👉 若為本校教師，請至「Email對照表」加入名單。");
+  } catch (e) { console.log(e.message); }
 }
 
 /**
