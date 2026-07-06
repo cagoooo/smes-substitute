@@ -93,11 +93,12 @@ Write-Host "📦 Git commit and push..." -ForegroundColor Yellow
 $prefix = "$([char]0x2705)$([char]0x5347)$([char]0x7d1a) PWA $([char]0x7248)$([char]0x672c)$([char]0x865f)$([char]0x70ba)"
 $commitMsg = "$prefix $newVersion ($notes)"
 
+git add .
+
 # Write commit message directly to a UTF-8 file (without BOM for git compatibility)
 # Using .NET File API to ensure pure UTF-8 encoding
 [System.IO.File]::WriteAllText("temp_commit_msg.txt", $commitMsg, [System.Text.Encoding]::UTF8)
 
-git add .
 # Commit using the message file
 git commit -F temp_commit_msg.txt
 

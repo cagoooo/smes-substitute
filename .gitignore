@@ -5,3 +5,5 @@ gas/.clasp.json
 *.xlsx
 setup_result.html
 node_modules/
+temp_commit_msg.txt
+commit_msg.txt
