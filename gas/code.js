@@ -54,8 +54,8 @@ function doGet(e) {
 /**
  * 🌐 2. JSON API 入口（GitHub Pages 前端專用）
  * 前端以 Content-Type: text/plain 直接 POST JSON（避免 CORS preflight）：
- *   { fn: "init" | "weekly" | "submit" | "confirmInfo" | "confirm", args: [...], idToken: "..." }
- * 身分一律由 Google 登入的 id_token 驗證取得，不再依賴 Session.getActiveUser()。
+ *   { fn, args, idToken }
+ * 身分由 Google 登入（GIS）的 id_token 驗證取得，不依賴 Session.getActiveUser()。
  */
 function doPost(e) {
   let out;
