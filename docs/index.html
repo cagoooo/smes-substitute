@@ -87,7 +87,10 @@
         <a href="#" class="text-info ms-2" style="font-size: 17px; text-decoration: none; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#installHelpModal">
     (📱加入手機桌面教學)
   </a>
-        </span><div id="userBadge" class="user-tag">身分驗證中...</div></div>
+        </span><div class="d-flex align-items-center gap-2">
+        <div id="userBadge" class="user-tag">身分驗證中...</div>
+        <button id="logoutBtn" onclick="logout()" class="btn btn-sm btn-outline-light" style="display:none; font-size:13px; padding:3px 14px; border-radius:20px;">登出</button>
+      </div></div>
   </nav>
 
   <div class="container-fluid mt-2 px-3">
@@ -312,6 +315,13 @@
       return j.result;
     }
 
+    // --- 0d. 登出 ---
+    function logout() {
+      try { google.accounts.id.disableAutoSelect(); } catch (e) {}
+      ID_TOKEN = null;
+      location.reload();
+    }
+
     // --- 0c. Google 登入（GIS）---
     function initGis() {
       google.accounts.id.initialize({
@@ -361,6 +371,7 @@
         TODAY_STR = res.todayStr;
 
         document.getElementById('userBadge').innerText = `👤 ${USER.name} (${USER.role})`;
+        document.getElementById('logoutBtn').style.display = 'inline-block';
         const wSel = document.getElementById('weekSelector'), swSel = document.getElementById('swapWeekSelector');
         res.weeks.forEach(w => { 
           let opt = `${w.label} (${w.range})`; 
