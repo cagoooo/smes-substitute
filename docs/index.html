@@ -18,8 +18,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.06-1">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.06-1">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.06-6">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.06-6">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -31,7 +31,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="twitter:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.06-1">
+  <meta name="og-preview.png?v=2026.07.06-6">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
@@ -239,7 +239,10 @@
       <!-- 右：異動摘要 (3) -->
       <div class="col-md-3">
         <div class="card shadow-sm border-0">
-          <div class="list-header bg-primary">📅 調代課異動摘要</div>
+          <div class="list-header bg-primary d-flex align-items-center justify-content-between">
+            <span>📅 調代課異動摘要</span>
+            <button class="btn btn-xs btn-light fw-bold" style="font-size:11px; padding:2px 8px; border-radius:6px;" onclick="exportCurrentMonthDocs()">📥 匯出當月 DOCX</button>
+          </div>
           <div class="side-list-card">
             <table class="table table-sm table-hover m-0">
               <thead class="table-light small">
@@ -801,6 +804,200 @@
       listBody.innerHTML = html || '<tr><td colspan="3" class="text-center p-4 text-muted small">暫無紀錄</td></tr>';
     }
 
+    /**
+     * --- 5b. 匯出當月已確認單據為分頁 Word (doc) 表單 (P1-4) ---
+     */
+    function exportCurrentMonthDocs() {
+      if (!FULL_CHANGES || (!FULL_CHANGES.allSub && !FULL_CHANGES.allSwap)) {
+        alert("暫無異動資料可供匯出。");
+        return;
+      }
+      
+      var defaultMonth = new Date().getMonth() + 1;
+      var monthInput = prompt("請輸入欲匯出之月份（數字 1 ~ 12）：", defaultMonth);
+      if (monthInput === null) return;
+      var targetMonth = parseInt(monthInput, 10);
+      if (isNaN(targetMonth) || targetMonth < 1 || targetMonth > 12) {
+        alert("請輸入正確的月份數字 (1 ~ 12)。");
+        return;
+      }
+      
+      var subList = FULL_CHANGES.allSub || [];
+      var swapList = FULL_CHANGES.allSwap || [];
+      
+      var docsHtml = "";
+      var docCount = 0;
+      
+      // 篩選與生成代課單 HTML
+      subList.forEach(function(r) {
+        var serial = r[1];
+        var leaveTeacher = r[2];
+        var subTeacher = r[3];
+        var reason = r[4];
+        var cls = r[5];
+        var subject = r[6];
+        var dateStr = r[7];
+        var timeKey = r[8];
+        var fee = r[9];
+        var status = r[10];
+        var note = r[11] || "無";
+        
+        var isConfirmed = (status === "教師皆確認可出單" || status === "可出單" || status === "已出單");
+        if (!isConfirmed) return;
+        
+        var parts = dateStr.split('/');
+        if (parts.length >= 2) {
+          var m = parseInt(parts[1], 10);
+          if (m !== targetMonth) return;
+        } else {
+          return;
+        }
+        
+        if (docCount > 0) {
+          docsHtml += '<br clear="all" style="page-break-before: always;">';
+        }
+        
+        docsHtml += `
+        <div style="width: 100%; border: 2px solid #000; padding: 15px; margin-bottom: 20px; font-family: 'Microsoft JhengHei', sans-serif;">
+          <h2 style="text-align: center; margin-top: 0;">石門國小教師代課通知單</h2>
+          <table style="width: 100%; border-collapse: collapse; border: 1px solid #000;">
+            <tr>
+              <th style="border: 1px solid #000; padding: 8px; width: 20%; background-color: #f2f2f2;">單號</th>
+              <td style="border: 1px solid #000; padding: 8px; width: 30%;">${serial}</td>
+              <th style="border: 1px solid #000; padding: 8px; width: 20%; background-color: #f2f2f2;">狀態</th>
+              <td style="border: 1px solid #000; padding: 8px; width: 30%;">${status}</td>
+            </tr>
+            <tr>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">請假教師</th>
+              <td style="border: 1px solid #000; padding: 8px;">${leaveTeacher}</td>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">代課教師</th>
+              <td style="border: 1px solid #000; padding: 8px;">${subTeacher}</td>
+            </tr>
+            <tr>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">日期與節次</th>
+              <td style="border: 1px solid #000; padding: 8px;">${dateStr} (${timeKey})</td>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">原因/假別</th>
+              <td style="border: 1px solid #000; padding: 8px;">${reason}</td>
+            </tr>
+            <tr>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">班級與科目</th>
+              <td style="border: 1px solid #000; padding: 8px;">${cls} / ${subject}</td>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">代課鐘點費</th>
+              <td style="border: 1px solid #000; padding: 8px;">${fee} 元/節</td>
+            </tr>
+            <tr>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">備註</th>
+              <td colspan="3" style="border: 1px solid #000; padding: 8px;">${note}</td>
+            </tr>
+          </table>
+          <br>
+          <table style="width: 100%; text-align: center; border: 0;">
+            <tr>
+              <td style="width: 25%; font-size:13px;">請假人：___________</td>
+              <td style="width: 25%; font-size:13px;">代課人：___________</td>
+              <td style="width: 25%; font-size:13px;">教學組長：___________</td>
+              <td style="width: 25%; font-size:13px;">教務主任：___________</td>
+            </tr>
+          </table>
+        </div>
+        `;
+        docCount++;
+      });
+      
+      // 篩選與生成調課單 HTML
+      swapList.forEach(function(r) {
+        var serial = r[1];
+        var teacherA = r[2];
+        var teacherB = r[3];
+        var reason = r[4];
+        var cls = r[5];
+        var dateA = r[6];
+        var timeA = r[7];
+        var subA = r[8];
+        var dateB = r[9];
+        var timeB = r[10];
+        var subB = r[11];
+        var status = r[12];
+        var note = r[13] || "無";
+        
+        var isConfirmed = (status === "教師皆確認可出單" || status === "可出單" || status === "已出單");
+        if (!isConfirmed) return;
+        
+        var parts = dateA.split('/');
+        if (parts.length >= 2) {
+          var m = parseInt(parts[1], 10);
+          if (m !== targetMonth) return;
+        } else {
+          return;
+        }
+        
+        if (docCount > 0) {
+          docsHtml += '<br clear="all" style="page-break-before: always;">';
+        }
+        
+        docsHtml += `
+        <div style="width: 100%; border: 2px solid #000; padding: 15px; margin-bottom: 20px; font-family: 'Microsoft JhengHei', sans-serif;">
+          <h2 style="text-align: center; margin-top: 0;">石門國小教師調課通知單</h2>
+          <table style="width: 100%; border-collapse: collapse; border: 1px solid #000;">
+            <tr>
+              <th style="border: 1px solid #000; padding: 8px; width: 20%; background-color: #f2f2f2;">單號</th>
+              <td style="border: 1px solid #000; padding: 8px; width: 30%;">${serial}</td>
+              <th style="border: 1px solid #000; padding: 8px; width: 20%; background-color: #f2f2f2;">狀態</th>
+              <td style="border: 1px solid #000; padding: 8px; width: 30%;">${status}</td>
+            </tr>
+            <tr>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">調課教師 A</th>
+              <td style="border: 1px solid #000; padding: 8px;">${teacherA}</td>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">調課教師 B</th>
+              <td style="border: 1px solid #000; padding: 8px;">${teacherB}</td>
+            </tr>
+            <tr>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">調出節次 (A)</th>
+              <td style="border: 1px solid #000; padding: 8px;">${dateA} (${timeA}) / ${subA}<br><b>${cls}</b></td>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">調入節次 (B)</th>
+              <td style="border: 1px solid #000; padding: 8px;">${dateB} (${timeB}) / ${subB}<br><b>${cls}</b></td>
+            </tr>
+            <tr>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">調課原因</th>
+              <td style="border: 1px solid #000; padding: 8px;">${reason}</td>
+              <th style="border: 1px solid #000; padding: 8px; background-color: #f2f2f2;">備註</th>
+              <td style="border: 1px solid #000; padding: 8px;">${note}</td>
+            </tr>
+          </table>
+          <br>
+          <table style="width: 100%; text-align: center; border: 0;">
+            <tr>
+              <td style="width: 25%; font-size:13px;">教師 A：___________</td>
+              <td style="width: 25%; font-size:13px;">教師 B：___________</td>
+              <td style="width: 25%; font-size:13px;">教學組長：___________</td>
+              <td style="width: 25%; font-size:13px;">教務主任：___________</td>
+            </tr>
+          </table>
+        </div>
+        `;
+        docCount++;
+      });
+      
+      if (docCount === 0) {
+        alert("找不到 " + targetMonth + " 月份已確認的調代課單據。");
+        return;
+      }
+      
+      var header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><title>調代課單據匯出_" + targetMonth + "月</title><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom></w:WordDocument></xml></head><body>";
+      var footer = "</body></html>";
+      var fullHtml = header + docsHtml + footer;
+      
+      var blob = new Blob(['\ufeff' + fullHtml], { type: 'application/msword;charset=utf-8' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = "石門國小調代課單據匯出_" + targetMonth + "月.doc";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
     // --- 其餘輔助函式 (完整保留) ---
     function handleCellClick(el, timeKey, cls, tName, rawAttr) {
       if (!cls || cls === "---") return;
@@ -1041,7 +1238,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.07.06-4';   // 與 sw.js 同步
+    var APP_VERSION='2026.07.06-6';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;
@@ -1059,6 +1256,25 @@
       }
     }).catch(function(){});
 
+    // P1-3: 判斷是否適合靜默無感更新
+    function isSafeToSilentUpdate() {
+      var loginOverlay = document.getElementById('loginOverlay');
+      if (loginOverlay && loginOverlay.style.display !== 'none') return true;
+      if (document.querySelector('.modal.show')) return false;
+      if (document.querySelector('.cell-selected')) return false;
+      var note = document.getElementById('adjNote');
+      if (note && note.value.trim() !== '') return false;
+      return true;
+    }
+
+    function triggerUpdate(waiting) {
+      if (isSafeToSilentUpdate()) {
+        waiting ? waiting.postMessage({type:'SKIP_WAITING'}) : location.reload();
+      } else {
+        showBar(waiting);
+      }
+    }
+
     var reloaded=false;
     function showBar(waiting){
       if(document.getElementById('sw-update-bar')) return;
@@ -1072,11 +1288,11 @@
       document.getElementById('sw-go').onclick=function(){ waiting ? waiting.postMessage({type:'SKIP_WAITING'}) : location.reload(); };
     }
     navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(reg){
-      if(reg.waiting && navigator.serviceWorker.controller) showBar(reg.waiting);
+      if(reg.waiting && navigator.serviceWorker.controller) triggerUpdate(reg.waiting);
       reg.addEventListener('updatefound',function(){
         var nw=reg.installing; if(!nw) return;
         nw.addEventListener('statechange',function(){
-          if(nw.state==='installed' && navigator.serviceWorker.controller) showBar(reg.waiting||nw);
+          if(nw.state==='installed' && navigator.serviceWorker.controller) triggerUpdate(reg.waiting||nw);
         });
       });
       setInterval(function(){ reg.update().catch(function(){}); }, 60000);
@@ -1090,7 +1306,7 @@
     });
     // 備胎：version.json 輪詢（SW 事件沒攔到也能提示）
     function checkVer(){ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();})
-      .then(function(d){ if(d&&d.version&&d.version!==APP_VERSION) showBar(null); }).catch(function(){}); }
+      .then(function(d){ if(d&&d.version&&d.version!==APP_VERSION) triggerUpdate(null); }).catch(function(){}); }
     ['focus','online','pageshow'].forEach(function(ev){ window.addEventListener(ev,checkVer); });
     document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') checkVer(); });
     setTimeout(checkVer,8000); setInterval(checkVer,180000);
