@@ -1,6 +1,6 @@
 # 📅 石門國小線上調代課系統
 
-桃園市龍潭區石門國民小學的全校課表與調代課管理系統，改良自[新北市中和高中教學組線上調代課系統](https://docs.google.com/spreadsheets/d/11Y9PjHy1O91efKTtF-ze4APj5XRvvnD9klaDWM1gMaA/edit?usp=sharing)公開模板，調整為國小情境。
+桃園市龍潭區石門國民小學的全校課表與調代課管理系統。原創為[新北市中和高中教學組 詩穎老師 線上調代課系統](https://docs.google.com/spreadsheets/d/11Y9PjHy1O91efKTtF-ze4APj5XRvvnD9klaDWM1gMaA/edit?usp=sharing)公開模板，由阿凱老師改良調整為國小情境。
 
 🌐 **線上系統**：https://cagoooo.github.io/smes-substitute/
 
