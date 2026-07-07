@@ -76,8 +76,14 @@ function doPost(e) {
       "initAs": function () { checkAdminOrStaff_(email); return getSystemInitDataFor_(String(args[0] || "").toLowerCase(), { silent: true }); },
       // 📥 管理員一鍵上傳課表匯入：args[0]=classes(班級課表)、args[1]=supplement(本土語補充教師)，先備份再重建兩表+清快取
       "importSchedule": function () { checkAdminOrStaff_(email); return importScheduleWithBackup_(args[0], args[1]); },
-      // 📥 匯入前預覽：只算不寫，回傳統計/衝突讓前端顯示
-      "previewSchedule": function () { checkAdminOrStaff_(email); return buildScheduleSheets_(args[0], args[1]).stats; },
+      // 📥 匯入前預覽：只算不寫，回傳統計/衝突 + 新舊差異（哪些老師的課變了）讓前端顯示
+      "previewSchedule": function () {
+        checkAdminOrStaff_(email);
+        var built = buildScheduleSheets_(args[0], args[1]);
+        var stats = built.stats;
+        stats.diff = diffScheduleSheets_(args[0], args[1]);
+        return stats;
+      },
       "getEmailList": function () { return getEmailListFor_(email); },
       "updateEmailList": function () { return updateEmailListFor_(args[0], email); },
       "getSettlementReport": function () { return getSettlementReport_(args[0], email); }

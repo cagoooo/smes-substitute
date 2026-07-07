@@ -101,6 +101,58 @@ function buildScheduleSheets_(classes, supplement) {
   };
 }
 
+/** 把教師課表二維陣列(含表頭2列)轉成 { 老師: { 日+節: '課程|班級' } } */
+function teacherRowsToMap_(rows) {
+  var map = {};
+  for (var i = 2; i < rows.length; i++) {
+    var name = String(rows[i][1] || '').trim();
+    if (!name) continue;
+    var slots = {};
+    for (var d = 0; d < 5; d++) {
+      for (var p = 1; p <= 8; p++) {
+        var sub = String(rows[i][2 + (d * 16) + ((p - 1) * 2)] || '').trim();
+        var cls = String(rows[i][2 + (d * 16) + ((p - 1) * 2) + 1] || '').trim();
+        if (sub) slots[SI_DAYS[d] + p] = sub + '|' + cls;
+      }
+    }
+    map[name] = slots;
+  }
+  return map;
+}
+
+/** 比對「新解析課表」與「目前線上教師課表」→ 回傳老師層級差異摘要（供匯入前預覽） */
+function diffScheduleSheets_(classes, supplement) {
+  var built = buildScheduleSheets_(classes, supplement);
+  var newMap = teacherRowsToMap_(built.teacherRows);
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var cur = ss.getSheetByName('教師課表');
+  var oldMap = cur ? teacherRowsToMap_(cur.getDataRange().getDisplayValues()) : {};
+
+  var added = [], removed = [], changed = [], unchanged = 0;
+  Object.keys(newMap).forEach(function (name) {
+    if (!oldMap[name]) { added.push(name); return; }
+    var o = oldMap[name], n = newMap[name];
+    var a = 0, r = 0, c = 0;
+    var keys = {};
+    Object.keys(o).forEach(function (k) { keys[k] = 1; });
+    Object.keys(n).forEach(function (k) { keys[k] = 1; });
+    Object.keys(keys).forEach(function (k) {
+      if (n[k] && !o[k]) a++;
+      else if (!n[k] && o[k]) r++;
+      else if (n[k] !== o[k]) c++;
+    });
+    if (a || r || c) changed.push({ name: name, added: a, removed: r, changed: c });
+    else unchanged++;
+  });
+  Object.keys(oldMap).forEach(function (name) { if (!newMap[name]) removed.push(name); });
+
+  changed.sort(function (x, y) { return (y.added + y.removed + y.changed) - (x.added + x.removed + x.changed); });
+  return {
+    hasCurrent: !!cur && Object.keys(oldMap).length > 0,
+    added: added.sort(), removed: removed.sort(), changed: changed, unchanged: unchanged
+  };
+}
+
 /** 把某張表複製成帶時間戳的備份分頁（若存在） */
 function backupSheet_(ss, name) {
   var sh = ss.getSheetByName(name);

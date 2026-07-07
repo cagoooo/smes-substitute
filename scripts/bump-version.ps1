@@ -3,6 +3,10 @@ param (
     [string]$notes = ""
 )
 
+# 🔒 錨定到 repo 根目錄（不管從哪個 cwd 呼叫都正確；避免相對路徑與 git add . 掃錯目錄）
+$root = Split-Path -Parent $PSScriptRoot
+Set-Location $root
+
 # Get current date in yyyy.MM.dd format
 $today = Get-Date -Format "yyyy.MM.dd"
 $newVersion = ""
@@ -10,7 +14,7 @@ $newVersion = ""
 # 1. Read current version and determine new version
 $versionFile = "docs/version.json"
 if (Test-Path $versionFile) {
-    $json = Get-Content $versionFile -Raw | ConvertFrom-Json
+    $json = Get-Content $versionFile -Raw -Encoding UTF8 | ConvertFrom-Json
     $currentVersion = $json.version
     if ($currentVersion -match "^(\d{4}\.\d{2}\.\d{2})-(\d+)$") {
         $datePart = $Matches[1]

@@ -18,8 +18,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-7">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-7">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.08-1">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.08-1">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -31,7 +31,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="og-preview.png?v=2026.07.07-7">
+  <meta name="og-preview.png?v=2026.07.08-1">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
@@ -1409,7 +1409,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.07.07-7';   // 與 sw.js 同步
+    var APP_VERSION='2026.07.08-1';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;
@@ -1860,6 +1860,21 @@
     html += '<div class="mb-2">班級碼：<code style="font-size:11px;">' + codes.join('、') + '</code></div>';
     html += '<div class="mb-2">排課衝突（同師同節不同班，本土語除外）：' +
       (col.length ? '<span class="text-danger fw-bold">' + col.length + ' 筆</span><br><small class="text-danger">' + col.map(function (x) { return x; }).join('<br>') + '</small>' : '<span class="text-success fw-bold">無 ✅</span>') + '</div>';
+    // 🔍 新舊課表差異（哪些老師的課變了）
+    var df = stats.diff;
+    if (df && df.hasCurrent) {
+      html += '<hr class="my-2"><div class="fw-bold mb-1">🔍 與目前線上課表的差異</div>';
+      if (df.added.length) html += '<div class="mb-1 text-success">🆕 新增老師 <b>' + df.added.length + '</b>：' + df.added.join('、') + '</div>';
+      if (df.removed.length) html += '<div class="mb-1 text-danger">➖ 移除老師 <b>' + df.removed.length + '</b>：' + df.removed.join('、') + '</div>';
+      if (df.changed.length) {
+        html += '<div class="mb-1 text-primary">✏️ 課表有異動 <b>' + df.changed.length + '</b> 位：<small>' +
+          df.changed.map(function (t) { return t.name + '(＋' + t.added + ' －' + t.removed + ' ～' + t.changed + ')'; }).join('、') + '</small></div>';
+      }
+      html += '<div class="text-muted small">✅ 未變動 ' + df.unchanged + ' 位　（＋新增節 －移除節 ～更換課程/班級）</div>';
+      if (!df.added.length && !df.removed.length && !df.changed.length) html += '<div class="text-muted small">與目前課表完全相同，匯入不會有任何變動。</div>';
+    } else if (df) {
+      html += '<hr class="my-2"><div class="text-muted small">🔍 目前沒有既有課表可比對（首次匯入）。</div>';
+    }
     if (allWarn.length) html += '<div class="text-warning small">⚠️ 解析警告 ' + allWarn.length + ' 則：<br>' + allWarn.slice(0, 10).join('<br>') + '</div>';
     if (col.length) html += '<div class="alert alert-danger py-1 px-2 mt-2 mb-0 small">有排課衝突，通常代表上傳了重複年級或非班級課表，建議重新確認後再匯入。</div>';
     var pv = document.getElementById('importPreviewArea');
