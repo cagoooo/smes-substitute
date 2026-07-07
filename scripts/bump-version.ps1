@@ -3,9 +3,10 @@ param (
     [string]$notes = ""
 )
 
-# 🔒 錨定到 repo 根目錄（不管從哪個 cwd 呼叫都正確；避免相對路徑與 git add . 掃錯目錄）
-$root = Split-Path -Parent $PSScriptRoot
-Set-Location $root
+# 🔒 錨定到 repo 根目錄（用 git 找頂層，從任何 cwd 呼叫都正確；避免相對路徑與 git add . 掃錯目錄）
+# 注意：PowerShell 工具執行本腳本時 $PSScriptRoot 可能為 null，故改用 git rev-parse。
+$root = (git rev-parse --show-toplevel 2>$null)
+if ($root) { Set-Location $root }
 
 # Get current date in yyyy.MM.dd format
 $today = Get-Date -Format "yyyy.MM.dd"
