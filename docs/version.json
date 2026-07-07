@@ -1,1 +1,1 @@
-{"version":"2026.07.07-4","notes":"靜默更新後補跳2秒已更新提示toast"}
+{"version":"2026.07.07-5","notes":"P1-1 管理控制台新增課表匯入分頁：一鍵上傳年級課表PDF前端pdf.js解析預覽後匯入(含衝突檢查與自動備份)+後端importSchedule/previewSchedule API"}

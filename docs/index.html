@@ -18,8 +18,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-4">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-4">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-5">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-5">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -31,7 +31,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="og-preview.png?v=2026.07.07-4">
+  <meta name="og-preview.png?v=2026.07.07-5">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
@@ -401,6 +401,9 @@
             <li class="nav-item" role="presentation">
               <button class="nav-link fw-bold text-secondary" id="settle-tab" data-bs-toggle="tab" data-bs-target="#settle-pane" type="button" role="tab" aria-controls="settle-pane" aria-selected="false">💰 兼代課鐘點月結算</button>
             </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link fw-bold text-secondary" id="import-tab" data-bs-toggle="tab" data-bs-target="#import-pane" type="button" role="tab" aria-controls="import-pane" aria-selected="false">📥 課表匯入</button>
+            </li>
           </ul>
           
           <div class="tab-content" id="adminTabContent">
@@ -480,6 +483,29 @@
                 請點選上方「預覽結算」以查詢代課節數與金額統計
               </div>
             </div>
+
+            <!-- 📥 分頁 3：課表匯入（前端一鍵上傳 PDF） -->
+            <div class="tab-pane fade" id="import-pane" role="tabpanel" aria-labelledby="import-tab">
+              <div class="alert alert-warning py-2 px-3 small mb-3" style="border-radius:10px;">
+                ⚠️ 上傳學校排課系統匯出的<b>各年級「班級課表」PDF</b>（可一次多選一～六年級）。系統會解析後<b>重建</b>「排課資料庫」與「教師課表」；<b>寫入前會自動備份</b>舊表成「_備份_日期時間」分頁，可還原。本土語文為跨班分組不對應單一老師。
+              </div>
+              <div class="card p-3 mb-3 bg-light border-0" style="border-radius:10px;">
+                <div class="row g-2 align-items-end">
+                  <div class="col-md-8">
+                    <label class="small fw-bold text-muted mb-1">選擇課表 PDF（可多選）</label>
+                    <input type="file" id="importPdfInput" class="form-control form-control-sm" accept="application/pdf" multiple onchange="onImportFilesChosen()">
+                  </div>
+                  <div class="col-md-4">
+                    <button id="btnParsePdf" onclick="parseImportPdfs()" class="btn btn-sm btn-primary w-100 fw-bold" style="background:#2563eb;border:0;" disabled>🔍 解析並預覽</button>
+                  </div>
+                </div>
+              </div>
+              <div id="importStatus" class="small text-muted mb-2"></div>
+              <div id="importPreviewArea" class="border rounded p-3 bg-white mb-3" style="display:none; max-height:320px; overflow-y:auto; font-size:13px; border-radius:8px;"></div>
+              <div class="text-end">
+                <button id="btnConfirmImport" onclick="confirmImportSchedule()" class="btn btn-success fw-bold" style="display:none; background:#16a34a;border:0;">✅ 確認匯入（覆蓋現有課表）</button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -488,6 +514,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+  <!-- 📥 pdf.js：管理員一鍵上傳課表 PDF 前端解析用（與後端 ScheduleImport 同款邏輯） -->
+  <script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+  <script>if(window.pdfjsLib)pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js';</script>
   
   <script src="https://accounts.google.com/gsi/client" async defer onload="initGis()"></script>
   <script>
@@ -1380,7 +1409,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.07.07-4';   // 與 sw.js 同步
+    var APP_VERSION='2026.07.07-5';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;
@@ -1634,6 +1663,156 @@
     if (!REAL_INIT) { location.reload(); return; }
     initSystem(REAL_INIT);
     window.scrollTo(0, 0);
+  }
+
+  // ===== 📥 P1-1 課表 PDF 一鍵上傳解析（前端 pdf.js，與後端 ScheduleImport 同款邏輯）=====
+  var IMPORT_PARSED_CLASSES = null;
+  var IMPORT_DAYS = ['一', '二', '三', '四', '五'];
+  var IMPORT_GRADE_NUM = { '一': 1, '二': 2, '三': 3, '四': 4, '五': 5, '六': 6 };
+
+  // 解析單頁 -> { className, code, homeroom, grade, cells:[{day,period,subject,teacher,room}] } 或 null
+  function parseImportPage(items, warn) {
+    var clean = items.map(function (it) {
+      return { s: (it.str || '').replace(/\s+/g, ''), x: +it.transform[4], y: +it.transform[5], w: +it.width };
+    }).filter(function (it) { return it.s !== ''; });
+
+    var titleStr = clean.filter(function (it) { return it.y > 700 && it.y < 730; })
+      .sort(function (a, b) { return a.x - b.x; }).map(function (i) { return i.s; }).join('');
+    var mCls = titleStr.match(/([一二三四五六])年(\d+)班/);
+    var mHr = titleStr.match(/導師[：:]\s*([^\s教]+?)教師/);
+    if (!mCls) { warn.push('無法解析班級標題：' + titleStr.slice(0, 20)); return null; }
+    var gradeCh = mCls[1], gradeNum = IMPORT_GRADE_NUM[gradeCh], classNo = parseInt(mCls[2], 10);
+    var code = '' + gradeNum + ('0' + classNo).slice(-2);
+    var className = gradeCh + '年' + classNo + '班';
+    var homeroom = mHr ? mHr[1] : '';
+
+    var dayHeaders = {};
+    clean.filter(function (it) { return /^星期[一二三四五]$/.test(it.s); }).forEach(function (it) { dayHeaders[it.s[2]] = it.x + it.w / 2; });
+    var dayCenters = IMPORT_DAYS.map(function (d) { return { d: d, c: dayHeaders[d] }; }).filter(function (o) { return o.c != null; });
+    if (dayCenters.length !== 5) warn.push(className + ' 星期表頭偵測=' + dayCenters.length);
+
+    var periodAnchors = {}, excludeAnchors = [];
+    clean.forEach(function (it) {
+      var m = it.s.match(/^第([一二三四五六七八])節$/);
+      if (m) periodAnchors['一二三四五六七八'.indexOf(m[1]) + 1] = it.y;
+      if (it.s === '晨間' || it.s === '午餐' || it.s === '午休') excludeAnchors.push(it.y);
+    });
+    var anchorList = Object.keys(periodAnchors).map(function (p) { return { p: +p, y: periodAnchors[p] }; });
+
+    var content = clean.filter(function (it) { return it.x >= 190 && it.y < 665 && it.y > 120; });
+    function nearestDay(cx) { var best = null, bd = 1e9; dayCenters.forEach(function (o) { var d = Math.abs(cx - o.c); if (d < bd) { bd = d; best = o.d; } }); return bd < 40 ? best : null; }
+    function nearestPeriod(y) {
+      var best = null, bd = 1e9, ed = 1e9;
+      anchorList.forEach(function (a) { var d = Math.abs(y - a.y); if (d < bd) { bd = d; best = a.p; } });
+      excludeAnchors.forEach(function (ey) { var d = Math.abs(y - ey); if (d < ed) ed = d; });
+      if (ed < bd) return null; return best;
+    }
+
+    var cellItems = {};
+    content.forEach(function (it) {
+      var day = nearestDay(it.x + it.w / 2), period = nearestPeriod(it.y);
+      if (!day || !period) return;
+      var k = day + '|' + period;
+      (cellItems[k] = cellItems[k] || []).push(it);
+    });
+
+    var cells = [];
+    Object.keys(cellItems).forEach(function (k) {
+      var parts = k.split('|'), day = parts[0], period = +parts[1];
+      var arr = cellItems[k].slice().sort(function (a, b) { return b.y - a.y || a.x - b.x; });
+      var lines = [];
+      arr.forEach(function (it) {
+        var glyphW = it.w / Math.max(1, Array.from(it.s).length);
+        var line = null;
+        for (var i = 0; i < lines.length; i++) { if (Math.abs(lines[i].y - it.y) <= 4) { line = lines[i]; break; } }
+        if (line) { line.items.push({ s: it.s, x: it.x, glyphW: glyphW }); line.y = (line.y + it.y) / 2; }
+        else lines.push({ y: it.y, items: [{ s: it.s, x: it.x, glyphW: glyphW }] });
+      });
+      lines.sort(function (a, b) { return b.y - a.y; });
+      lines.forEach(function (L) { L.items.sort(function (a, b) { return a.x - b.x; }); });
+      function isBig(L) { return L.items.some(function (i) { return i.glyphW >= 10; }); }
+      var subjLines = lines.filter(isBig), infoLines = lines.filter(function (L) { return !isBig(L); });
+      var subject = subjLines.map(function (L) { return L.items.map(function (i) { return i.s; }).join(''); }).join('');
+      var teacher = infoLines[0] ? infoLines[0].items.map(function (i) { return i.s; }).join('') : '';
+      var room = infoLines.slice(1).map(function (L) { return L.items.map(function (i) { return i.s; }).join(''); }).join(' ');
+      if (!subject) return;
+      cells.push({ day: day, period: period, subject: subject, teacher: teacher, room: room });
+    });
+    cells.sort(function (a, b) { return IMPORT_DAYS.indexOf(a.day) - IMPORT_DAYS.indexOf(b.day) || a.period - b.period; });
+    return { className: className, code: code, homeroom: homeroom, grade: gradeNum, cells: cells };
+  }
+
+  function onImportFilesChosen() {
+    var f = document.getElementById('importPdfInput').files;
+    document.getElementById('btnParsePdf').disabled = !(f && f.length);
+    document.getElementById('btnConfirmImport').style.display = 'none';
+    document.getElementById('importPreviewArea').style.display = 'none';
+    IMPORT_PARSED_CLASSES = null;
+  }
+
+  async function parseImportPdfs() {
+    if (!window.pdfjsLib) { alert('PDF 解析元件尚未載入，請重新整理頁面再試。'); return; }
+    var files = Array.from(document.getElementById('importPdfInput').files || []);
+    if (!files.length) return;
+    var status = document.getElementById('importStatus');
+    var allClasses = [], allWarn = [];
+    status.innerHTML = '<span class="spinner-border spinner-border-sm text-primary me-2"></span>解析中…';
+    try {
+      for (var fi = 0; fi < files.length; fi++) {
+        var buf = await files[fi].arrayBuffer();
+        var doc = await pdfjsLib.getDocument({ data: buf }).promise;
+        for (var p = 1; p <= doc.numPages; p++) {
+          var page = await doc.getPage(p);
+          var tc = await page.getTextContent();
+          var w = [];
+          var cls = parseImportPage(tc.items, w);
+          if (cls) allClasses.push(cls);
+          allWarn.push.apply(allWarn, w.map(function (x) { return '[' + files[fi].name + '] ' + x; }));
+        }
+      }
+    } catch (err) { status.innerHTML = '<span class="text-danger">解析失敗：' + err.message + '</span>'; return; }
+
+    if (!allClasses.length) { status.innerHTML = '<span class="text-danger">未解析到任何班級課表，請確認上傳的是「班級課表」PDF。</span>'; return; }
+    IMPORT_PARSED_CLASSES = allClasses;
+
+    // 後端預覽（只算不寫）取得權威統計與衝突
+    status.innerHTML = '<span class="spinner-border spinner-border-sm text-primary me-2"></span>驗證中…';
+    var stats;
+    try { stats = await api('previewSchedule', [allClasses]); }
+    catch (err) { status.innerHTML = '<span class="text-danger">預覽失敗：' + err.message + '</span>'; return; }
+
+    status.innerHTML = '解析完成，請確認下方統計無誤後再匯入。';
+    var codes = allClasses.map(function (c) { return c.code; }).sort();
+    var col = stats.collisions || [];
+    var html = '<div class="mb-2"><b>解析結果</b>：班級 <b>' + stats.classes + '</b>／排課資料庫 <b>' + stats.dbCells +
+      '</b> 筆／教師課表 <b>' + stats.teachers + '</b> 位／本土語跨班 <b>' + stats.btCells + '</b> 格</div>';
+    html += '<div class="mb-2">班級碼：<code style="font-size:11px;">' + codes.join('、') + '</code></div>';
+    html += '<div class="mb-2">排課衝突（同師同節不同班，本土語除外）：' +
+      (col.length ? '<span class="text-danger fw-bold">' + col.length + ' 筆</span><br><small class="text-danger">' + col.map(function (x) { return x; }).join('<br>') + '</small>' : '<span class="text-success fw-bold">無 ✅</span>') + '</div>';
+    if (allWarn.length) html += '<div class="text-warning small">⚠️ 解析警告 ' + allWarn.length + ' 則：<br>' + allWarn.slice(0, 10).join('<br>') + '</div>';
+    if (col.length) html += '<div class="alert alert-danger py-1 px-2 mt-2 mb-0 small">有排課衝突，通常代表上傳了重複年級或非班級課表，建議重新確認後再匯入。</div>';
+    var pv = document.getElementById('importPreviewArea');
+    pv.innerHTML = html; pv.style.display = 'block';
+    document.getElementById('btnConfirmImport').style.display = 'inline-block';
+  }
+
+  async function confirmImportSchedule() {
+    if (!IMPORT_PARSED_CLASSES) return;
+    if (!confirm('確定要以解析結果【重建】排課資料庫與教師課表嗎？\n（舊表會先自動備份成「_備份_日期時間」分頁）')) return;
+    showLoading(true, '匯入課表中（含備份）…');
+    try {
+      var r = await api('importSchedule', [IMPORT_PARSED_CLASSES]);
+      showLoading(false);
+      var msg = '✅ 匯入完成！\n\n班級 ' + r.classes + ' 班\n排課資料庫 ' + r.dbCells + ' 筆\n教師課表 ' + r.teachers +
+        ' 位\n本土語跨班 ' + r.btCells + '\n排課衝突 ' + (r.collisions.length ? r.collisions.length + ' 筆' : '無') +
+        '\n\n已備份：' + (r.backups.length ? r.backups.join('、') : '（原無資料）') +
+        '\n\n即將重新整理載入最新課表。';
+      alert(msg);
+      location.reload();
+    } catch (err) {
+      showLoading(false);
+      alert('匯入失敗：' + err.message);
+    }
   }
 
   // 4. 鐘點月結算 (P1-2)
