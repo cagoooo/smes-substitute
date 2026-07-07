@@ -18,8 +18,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-6">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-6">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-7">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-7">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -31,7 +31,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="og-preview.png?v=2026.07.07-6">
+  <meta name="og-preview.png?v=2026.07.07-7">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
@@ -1409,7 +1409,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.07.07-6';   // 與 sw.js 同步
+    var APP_VERSION='2026.07.07-7';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;
@@ -1438,13 +1438,27 @@
       return true;
     }
 
-    function triggerUpdate(waiting) {
+    var SW_REG = null, UPDATING = false;
+
+    // 🔑 真正套用更新：在「點擊當下」才查 reg.waiting，確保等待中的新 SW 一定被 skip-waiting，一次到位
+    function applyUpdate() {
+      if (UPDATING) return; UPDATING = true;
+      var bar = document.getElementById('sw-update-bar'); if (bar) bar.remove();
+      if (SW_REG && SW_REG.waiting) {
+        SW_REG.waiting.postMessage({ type: 'SKIP_WAITING' });   // → activate → controllerchange → reload
+        setTimeout(function () { location.reload(); }, 1200);   // 保底：controllerchange 沒觸發也會重整
+      } else {
+        location.reload();
+      }
+    }
+
+    function triggerUpdate() {
       if (isSafeToSilentUpdate()) {
         // 靜默換版：設旗標，讓「重整後的新頁面」補跳 2 秒已更新小提示
         try { sessionStorage.setItem('sw_silent_updated', '1'); } catch(e) {}
-        waiting ? waiting.postMessage({type:'SKIP_WAITING'}) : location.reload();
+        applyUpdate();
       } else {
-        showBar(waiting);
+        showBar();
       }
     }
 
@@ -1468,8 +1482,7 @@
       }
     } catch(e) {}
 
-    var reloaded=false;
-    function showBar(waiting){
+    function showBar(){
       if(document.getElementById('sw-update-bar')) return;
       var s=document.createElement('style');
       s.textContent='#sw-update-bar{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);z-index:9999;display:flex;align-items:center;gap:12px;background:#1e293b;color:#fff;padding:12px 16px;border-radius:14px;box-shadow:0 14px 34px -10px rgba(0,0,0,.55);font:14.5px system-ui,sans-serif;max-width:calc(100vw - 28px)}#sw-update-bar button{cursor:pointer;border:none;border-radius:9px;font-weight:700;font:inherit}#sw-go{background:linear-gradient(135deg,#60a5fa,#2563eb);color:#fff;padding:8px 15px}#sw-x{background:transparent;color:#94a3b8;padding:6px 9px}';
@@ -1478,14 +1491,15 @@
       b.innerHTML='<span>✦ 系統有新版本</span><button id="sw-go">重新整理載入</button><button id="sw-x">✕</button>';
       document.body.appendChild(b);
       document.getElementById('sw-x').onclick=function(){ b.remove(); };
-      document.getElementById('sw-go').onclick=function(){ waiting ? waiting.postMessage({type:'SKIP_WAITING'}) : location.reload(); };
+      document.getElementById('sw-go').onclick=applyUpdate;
     }
     navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(reg){
-      if(reg.waiting && navigator.serviceWorker.controller) triggerUpdate(reg.waiting);
+      SW_REG = reg;
+      if(reg.waiting && navigator.serviceWorker.controller) triggerUpdate();
       reg.addEventListener('updatefound',function(){
         var nw=reg.installing; if(!nw) return;
         nw.addEventListener('statechange',function(){
-          if(nw.state==='installed' && navigator.serviceWorker.controller) triggerUpdate(reg.waiting||nw);
+          if(nw.state==='installed' && navigator.serviceWorker.controller) triggerUpdate();
         });
       });
       setInterval(function(){ reg.update().catch(function(){}); }, 60000);
@@ -1494,12 +1508,12 @@
       // P0-2: 使用 sessionStorage 旗標防止跨頁面重載循環
       if (sessionStorage.getItem('sw_reloaded')) return;
       sessionStorage.setItem('sw_reloaded', '1');
-      setTimeout(function(){ sessionStorage.removeItem('sw_reloaded'); }, 2000);
+      setTimeout(function(){ sessionStorage.removeItem('sw_reloaded'); }, 4000);
       location.reload();
     });
-    // 備胎：version.json 輪詢（SW 事件沒攔到也能提示）
+    // 備胎：version.json 輪詢（SW 事件沒攔到也能提示）。偵測到新版時先叫 SW 抓更新，讓點擊時 reg.waiting 已就緒
     function checkVer(){ fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();})
-      .then(function(d){ if(d&&d.version&&d.version!==APP_VERSION) triggerUpdate(null); }).catch(function(){}); }
+      .then(function(d){ if(d&&d.version&&d.version!==APP_VERSION){ if(SW_REG) SW_REG.update().catch(function(){}); triggerUpdate(); } }).catch(function(){}); }
     ['focus','online','pageshow'].forEach(function(ev){ window.addEventListener(ev,checkVer); });
     document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') checkVer(); });
     setTimeout(checkVer,8000); setInterval(checkVer,180000);

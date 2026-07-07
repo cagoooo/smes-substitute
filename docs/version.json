@@ -1,1 +1,1 @@
-{"version":"2026.07.07-6","notes":"P1-2 課表匯入器支援本土語教師課表PDF自動辨識合併(教師課表61到66位含台語客語6師);後端buildScheduleSheets支援補充教師merge"}
+{"version":"2026.07.07-7","notes":"修正SW更新橫幅重複出現且第二次按無反應:按鈕改在點擊當下才查reg.waiting做skip-waiting,一次點擊乾淨完成不再雙重橫幅"}
