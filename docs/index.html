@@ -18,8 +18,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-2">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-2">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-3">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.07-3">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -31,7 +31,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="og-preview.png?v=2026.07.07-2">
+  <meta name="og-preview.png?v=2026.07.07-3">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
@@ -165,6 +165,14 @@
         <button id="logoutBtn" onclick="logout()" class="btn btn-sm btn-outline-light" style="display:none; font-size:13px; padding:3px 14px; border-radius:20px;">登出</button>
       </div></div>
   </nav>
+
+  <!-- 🎭 管理員模擬教師登入橫幅 -->
+  <div id="simBanner" style="display:none; background:linear-gradient(135deg,#7c3aed,#4f46e5); color:#fff; padding:8px 16px; font-size:14px; box-shadow:0 2px 8px rgba(0,0,0,0.15);">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+      <span>🎭 <b>模擬檢視中</b>：你正以 <b id="simName">—</b> 的身分預覽此系統畫面（僅供檢視，送出操作仍以你的管理員帳號為準）。</span>
+      <button onclick="exitSimulation()" class="btn btn-sm btn-light fw-bold py-1 px-3" style="border-radius:20px; font-size:12.5px; color:#4f46e5;">↩️ 退出模擬</button>
+    </div>
+  </div>
 
   <!-- 📱 PWA 自訂桌面安裝橫幅 (P1-3) -->
   <div id="pwa-install-banner" class="alert alert-primary alert-dismissible fade show m-3 shadow-sm" role="alert" style="display: none; border-radius: 12px; font-size: 14px; border: 0; background: linear-gradient(135deg, #eff6ff, #dbeafe); color: #1e3a8a;">
@@ -432,7 +440,7 @@
                       <th class="ps-3">姓名</th>
                       <th>Email 信箱</th>
                       <th>身分角色</th>
-                      <th class="text-center" style="width: 120px;">操作</th>
+                      <th class="text-center" style="width: 180px;">操作</th>
                     </tr>
                   </thead>
                   <tbody id="adminEmailTableBody">
@@ -541,6 +549,7 @@
         const res = await api("init");
         showLoading(false);
         if (res.error) { renderAccessDenied(res); return; }
+        REAL_INIT = res;
         initSystem(res);
       } catch (err) {
         showLoading(false);
@@ -560,6 +569,7 @@
     };
 
     let USER, WEEK_LIST, TEACHER_LIST, CURRENT_WEEK_DATES, ALL_DATA, WEEKLY_CHANGES, FULL_CHANGES, TODAY_STR, FEE_CATEGORIES = [];
+    let REAL_INIT = null, SIMULATING = false;   // 🎭 管理員模擬教師登入用
     let CURRENT_MATCH_MODE = 'sub', CLICKED_DATA = {}, PENDING_DATA = null, teacherChoices = null;
 
     function initSystem(res) {
@@ -575,15 +585,22 @@
         if (USER.role === "管理員" || USER.role === "行政") {
           document.getElementById('adminConsoleBtn').style.display = 'inline-block';
         }
+        // 🎭 可重複呼叫（管理員模擬登入會再次進入）：先重置動態元件，避免選項重複堆疊
+        if (teacherChoices) { try { teacherChoices.destroy(); } catch (e) {} teacherChoices = null; }
+        const tSel = document.getElementById('tSelector');
+        tSel.innerHTML = ''; tSel.disabled = false;
+        document.getElementById('btnPrevT').style.display = '';
+        document.getElementById('btnNextT').style.display = '';
+
         const wSel = document.getElementById('weekSelector'), swSel = document.getElementById('swapWeekSelector');
-        res.weeks.forEach(w => { 
-          let opt = `${w.label} (${w.range})`; 
-          wSel.add(new Option(opt, w.index)); 
-          swSel.add(new Option(opt, w.index)); 
+        wSel.innerHTML = ''; swSel.innerHTML = '';
+        res.weeks.forEach(w => {
+          let opt = `${w.label} (${w.range})`;
+          wSel.add(new Option(opt, w.index));
+          swSel.add(new Option(opt, w.index));
         });
         wSel.value = res.initialWeekIndex; swSel.value = res.initialWeekIndex;
 
-        const tSel = document.getElementById('tSelector');
         res.teacherList.forEach(t => tSel.add(new Option(t, t)));
         if (USER.role === "教師") {
           tSel.value = USER.name; tSel.disabled = true;
@@ -1363,7 +1380,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.07.07-2';   // 與 sw.js 同步
+    var APP_VERSION='2026.07.07-3';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;
@@ -1504,6 +1521,7 @@
           <td><code>${email}</code></td>
           <td><span class="badge ${role==='管理員'?'bg-danger':(role==='行政'?'bg-warning text-dark':'bg-secondary')}">${role}</span></td>
           <td class="text-center">
+            <button onclick="simulateTeacher(${idx})" class="btn btn-xs btn-outline-secondary py-0 px-2" style="font-size:11px;" title="以此教師身分預覽登入畫面">🎭 模擬</button>
             <button onclick="editUserPrompt(${idx})" class="btn btn-xs btn-outline-primary py-0 px-2" style="font-size:11px;">編輯</button>
             <button onclick="deleteUser(${idx})" class="btn btn-xs btn-outline-danger py-0 px-2" style="font-size:11px;">刪除</button>
           </td>
@@ -1561,6 +1579,39 @@
     document.getElementById('adminUserEmail').value = r[1];
     document.getElementById('adminUserRole').value = r[2];
     document.getElementById('adminUserName').focus();
+  }
+
+  // 🎭 以指定教師身分預覽登入畫面（管理員專用）
+  async function simulateTeacher(idx) {
+    const r = ADMIN_EMAIL_LIST[idx];
+    const name = r[0], email = (r[1] || '').toLowerCase().trim();
+    try { bootstrap.Modal.getInstance(document.getElementById('adminConsoleModal')).hide(); } catch (e) {}
+    showLoading(true, `載入 ${name} 的登入畫面…`);
+    try {
+      const res = await api("initAs", [email]);
+      showLoading(false);
+      if (res.error) {
+        alert(`⚠️ 「${name}」用此帳號登入會被拒絕：\n\n${res.msg || res.error}\n\nEmail：${email}`);
+        return;
+      }
+      SIMULATING = true;
+      initSystem(res);
+      document.getElementById('simName').innerHTML = `${res.user.name}（${res.user.role}）`;
+      document.getElementById('simBanner').style.display = 'block';
+      window.scrollTo(0, 0);
+    } catch (err) {
+      showLoading(false);
+      alert('模擬失敗：' + err.message);
+    }
+  }
+
+  // ↩️ 退出模擬，還原管理員自己的畫面
+  function exitSimulation() {
+    document.getElementById('simBanner').style.display = 'none';
+    SIMULATING = false;
+    if (!REAL_INIT) { location.reload(); return; }
+    initSystem(REAL_INIT);
+    window.scrollTo(0, 0);
   }
 
   // 4. 鐘點月結算 (P1-2)

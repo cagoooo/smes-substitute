@@ -72,6 +72,8 @@ function doPost(e) {
       "confirmInfo": function () { return getConfirmInfo_(args[0], args[1], email); },
       "confirm":     function () { return handleTeacherAdjustmentFor_(args[0], args[1], args[2], email); },
       // 新增管理控制台 API (P1-1 & P1-2)
+      // 🎭 管理員模擬教師登入：回傳目標教師登入時會看到的初始資料（抑制通知）
+      "initAs": function () { checkAdminOrStaff_(email); return getSystemInitDataFor_(String(args[0] || "").toLowerCase(), { silent: true }); },
       "getEmailList": function () { return getEmailListFor_(email); },
       "updateEmailList": function () { return updateEmailListFor_(args[0], email); },
       "getSettlementReport": function () { return getSettlementReport_(args[0], email); }
@@ -413,7 +415,9 @@ function getSystemInitData() {
 }
 
 // 初始資料：email 由 API 層以 id_token 驗證後帶入
-function getSystemInitDataFor_(email) {
+// opts.silent = true 時不推播「新使用者/被拒」通知（供管理員模擬登入 initAs 使用）
+function getSystemInitDataFor_(email, opts) {
+  opts = opts || {};
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
   // 1. 網域檢查（CONFIG.ALLOWED_DOMAINS 有設定才啟用；多網域用逗號分隔）
@@ -421,7 +425,7 @@ function getSystemInitDataFor_(email) {
     const allowList = CONFIG.ALLOWED_DOMAINS.split(",").map(d => d.trim().toLowerCase()).filter(d => d);
     const userDomain = email.includes("@") ? email.split("@").pop().toLowerCase() : "";
     if (allowList.length > 0 && !allowList.includes(userDomain)) {
-      maybeNotifyDenied_(email, "網域不符（非學校帳號）");
+      if (!opts.silent) maybeNotifyDenied_(email, "網域不符（非學校帳號）");
       return {
         error: "DOMAIN_WRONG",
         email: email,
@@ -448,7 +452,7 @@ function getSystemInitDataFor_(email) {
 
   // 3. 如果 Email 正確但不在名單內
   if (!user) {
-    maybeNotifyDenied_(email, "不在授權名單內");
+    if (!opts.silent) maybeNotifyDenied_(email, "不在授權名單內");
     return {
       error: "NOT_IN_LIST",
       email: email,
@@ -457,7 +461,7 @@ function getSystemInitDataFor_(email) {
   }
 
   // ✅ 成功通知：偵測到「首次登入」的新使用者才推播（避免每次登入洗版）
-  maybeNotifyNewUser_(user);
+  if (!opts.silent) maybeNotifyNewUser_(user);
 
   // --- 原有的週次與資料抓取邏輯 (保持不變) ---
   const timezone = ss.getSpreadsheetTimeZone();
