@@ -15,7 +15,7 @@ var SI_BT_SUBJECT = '本土語文';
 var SI_BT_PLACEHOLDER = '本土語文老師';
 
 /** 由 classes 建出兩張表的二維陣列 { dbRows, teacherRows, stats } */
-function buildScheduleSheets_(classes) {
+function buildScheduleSheets_(classes, supplement) {
   var homerooms = {};
   classes.forEach(function (c) { if (c.homeroom) homerooms[c.homeroom] = true; });
 
@@ -45,6 +45,24 @@ function buildScheduleSheets_(classes) {
       }
     });
   });
+  // --- 合併「補充教師」（本土語教師視角：台語/客語，班級為年級層級）---
+  // supplement: [{ name, subject, cells:[{day,period,subject,cls}] }]
+  var supplementCount = 0;
+  (supplement || []).forEach(function (t) {
+    if (!t || !t.name) return;
+    byTeacher[t.name] = byTeacher[t.name] || {};
+    supplementCount++;
+    (t.cells || []).forEach(function (x) {
+      var k = x.day + x.period;
+      if (byTeacher[t.name][k]) {
+        collisions.push(t.name + ' 星期' + x.day + '第' + x.period + '節 已有課(' +
+          byTeacher[t.name][k].sub + ')，本土語(' + x.subject + '/' + (x.cls || '') + ')略過');
+      } else {
+        byTeacher[t.name][k] = { sub: x.subject, cls: x.cls || '' };
+      }
+    });
+  });
+
   var names = Object.keys(byTeacher).sort(function (a, b) { return a.localeCompare(b, 'zh-Hant'); });
 
   function mainSubject(name) {
@@ -77,6 +95,7 @@ function buildScheduleSheets_(classes) {
       dbCells: dbRows.length - 1,
       teachers: names.length,
       btCells: dbRows.filter(function (r) { return r[4] === '本土語教師'; }).length,
+      supplementTeachers: supplementCount,
       collisions: collisions
     }
   };
@@ -106,11 +125,11 @@ function writeSheet_(ss, name, rows, frozenRows, frozenCols) {
   if (frozenCols) sh.setFrozenColumns(frozenCols);
 }
 
-/** 主流程：備份 → 重建兩張表。回傳結果摘要物件。 */
-function importScheduleWithBackup_(classes) {
+/** 主流程：備份 → 重建兩張表。回傳結果摘要物件。supplement=本土語補充教師（選填）。 */
+function importScheduleWithBackup_(classes, supplement) {
   if (!classes || !classes.length) throw new Error('沒有可匯入的課表資料。');
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var built = buildScheduleSheets_(classes);
+  var built = buildScheduleSheets_(classes, supplement);
 
   var backups = [
     backupSheet_(ss, '排課資料庫'),
@@ -134,6 +153,7 @@ function importScheduleWithBackup_(classes) {
     dbCells: built.stats.dbCells,
     teachers: built.stats.teachers,
     btCells: built.stats.btCells,
+    supplementTeachers: built.stats.supplementTeachers,
     collisions: built.stats.collisions
   };
 }

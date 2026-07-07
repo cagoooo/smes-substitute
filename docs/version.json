@@ -1,1 +1,1 @@
-{"version":"2026.07.07-5","notes":"P1-1 管理控制台新增課表匯入分頁：一鍵上傳年級課表PDF前端pdf.js解析預覽後匯入(含衝突檢查與自動備份)+後端importSchedule/previewSchedule API"}
+{"version":"2026.07.07-6","notes":"P1-2 課表匯入器支援本土語教師課表PDF自動辨識合併(教師課表61到66位含台語客語6師);後端buildScheduleSheets支援補充教師merge"}

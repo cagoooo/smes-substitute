@@ -74,10 +74,10 @@ function doPost(e) {
       // 新增管理控制台 API (P1-1 & P1-2)
       // 🎭 管理員模擬教師登入：回傳目標教師登入時會看到的初始資料（抑制通知）
       "initAs": function () { checkAdminOrStaff_(email); return getSystemInitDataFor_(String(args[0] || "").toLowerCase(), { silent: true }); },
-      // 📥 管理員一鍵上傳課表匯入：args[0]=classes 陣列（前端 pdf.js 解析），先備份再重建兩表+清快取
-      "importSchedule": function () { checkAdminOrStaff_(email); return importScheduleWithBackup_(args[0]); },
+      // 📥 管理員一鍵上傳課表匯入：args[0]=classes(班級課表)、args[1]=supplement(本土語補充教師)，先備份再重建兩表+清快取
+      "importSchedule": function () { checkAdminOrStaff_(email); return importScheduleWithBackup_(args[0], args[1]); },
       // 📥 匯入前預覽：只算不寫，回傳統計/衝突讓前端顯示
-      "previewSchedule": function () { checkAdminOrStaff_(email); return buildScheduleSheets_(args[0]).stats; },
+      "previewSchedule": function () { checkAdminOrStaff_(email); return buildScheduleSheets_(args[0], args[1]).stats; },
       "getEmailList": function () { return getEmailListFor_(email); },
       "updateEmailList": function () { return updateEmailListFor_(args[0], email); },
       "getSettlementReport": function () { return getSettlementReport_(args[0], email); }
