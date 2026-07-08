@@ -18,8 +18,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.08-6">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.08-6">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-1">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-1">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -31,7 +31,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="og-preview.png?v=2026.07.08-6">
+  <meta name="og-preview.png?v=2026.07.09-1">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
@@ -439,7 +439,10 @@
                   <button type="button" id="dashRangeMonth" class="btn btn-primary" onclick="setDashRange('month')">本月</button>
                   <button type="button" id="dashRangeAll" class="btn btn-outline-primary" onclick="setDashRange('all')">本學期累計</button>
                 </div>
-                <span class="text-muted small" id="dashRangeLabel"></span>
+                <div class="d-flex align-items-center gap-2">
+                  <span class="text-muted small" id="dashRangeLabel"></span>
+                  <button type="button" class="btn btn-sm btn-success fw-bold" style="background:#16a34a;border:0;" onclick="exportFairnessCsv()">📥 匯出公平度 CSV</button>
+                </div>
               </div>
               <div id="dashBody"><div class="text-center text-muted py-5"><div class="spinner-border spinner-border-sm text-primary me-2"></div>統計中…</div></div>
             </div>
@@ -1494,7 +1497,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.07.08-6';   // 與 sw.js 同步
+    var APP_VERSION='2026.07.09-1';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;
@@ -1724,6 +1727,36 @@
       + '<div class="dash-card"><div class="dash-h">🏫 各年級代課分布</div>' + gradeHtml + '</div>'
       + '<div class="dash-card"><div class="dash-h">💰 鐘點類別分布</div>' + catHtml + '</div>'
       + '</div>';
+  }
+
+  // 📥 P1-C 匯出完整代課公平度報表（全體老師，含被派 0 次者）
+  function exportFairnessCsv() {
+    if (!FULL_CHANGES || !FULL_CHANGES.allSub) { alert('尚無資料可匯出。'); return; }
+    var monthPrefix = String(TODAY_STR || '').slice(0, 7);
+    var isMonth = DASH_RANGE === 'month';
+    var rangeLbl = isMonth ? monthPrefix : '本學期累計';
+    var rateOf = {}; (FEE_CATEGORIES || []).forEach(function (c) { rateOf[c.name] = c.rate || 0; });
+    // 以全體教師為底（含 0 次），才看得出誰從沒被找過
+    var stat = {};
+    (TEACHER_LIST || []).forEach(function (n) { if (n && n !== '無固定教師' && n !== '輪流') stat[n] = { periods: 0, docs: 0, fee: 0, leave: 0 }; });
+    (FULL_CHANGES.allSub || []).forEach(function (r) {
+      if (r[10] === '不成立') return;
+      if (isMonth && String(r[7] || '').slice(0, 7) !== monthPrefix) return;
+      var p = (String(r[8] || '').match(/\d+/g) || ['1']).length;
+      String(r[3] || '').split(/[&/]/).forEach(function (n) { n = n.trim(); if (!n) return; stat[n] = stat[n] || { periods: 0, docs: 0, fee: 0, leave: 0 }; stat[n].periods += p; stat[n].docs++; stat[n].fee += (rateOf[String(r[9] || '').trim()] || 0) * p; });
+      String(r[2] || '').split(/[&/]/).forEach(function (n) { n = n.trim(); if (!n) return; stat[n] = stat[n] || { periods: 0, docs: 0, fee: 0, leave: 0 }; stat[n].leave += p; });
+    });
+    var rows = Object.keys(stat).map(function (n) { return [n, stat[n].periods, stat[n].docs, stat[n].fee, stat[n].leave]; })
+      .sort(function (a, b) { return b[1] - a[1] || a[0].localeCompare(b[0], 'zh-Hant'); });
+    var esc = function (v) { v = String(v); return /[",\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
+    var csv = '﻿代課公平度報表（' + rangeLbl + '）\n姓名,被派代課節數,被派代課單數,鐘點費預估,本人請假節數\n'
+      + rows.map(function (r) { return r.map(esc).join(','); }).join('\n') + '\n';
+    var blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '石門調代課_公平度報表_' + (isMonth ? monthPrefix.replace('/', '-') : '本學期') + '.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
   }
 
   // 3. 讀寫與渲染授權教師清單 (P1-1)
