@@ -746,6 +746,8 @@ function processAdjustmentFor_(data, email) {
       sendAdminDirectEmail(data, serial);
        // 🎯 新增：發送 LINE 推播通知
       notifyAdmin(`🔔【${CONFIG.SCHOOL_SHORT}調代課通知】\n教學組已直接確認一筆新單據！\n單號：${serial}\n請有空至系統列印單據。`);
+      // 📣 P1-D：教師 Chat 空間通知被安排的老師（已確認、無按鈕）
+      notifyTeacherChatInvite_(data, serial, { confirmed: true });
     } else {
       // 一般教師提交：寄邀請信給 B
       const teacherBName = isSwap ? data.teacherB : data.subTeacher;
@@ -753,6 +755,8 @@ function processAdjustmentFor_(data, email) {
       if (teacherBEmail) {
          sendInviteEmail(data, serial, teacherBEmail, teacherBName);
       }
+      // 📣 P1-D：教師 Chat 空間即時推播邀請（含同意/婉拒按鈕），Email 之外多一條即時管道
+      notifyTeacherChatInvite_(data, serial, { confirmed: false });
     }
 
     // ✅ 成功通知：有人成功送出一筆調代課申請
@@ -1112,6 +1116,49 @@ function pushChatCard_(status, title, rows, note) {
       payload: JSON.stringify(payload), muteHttpExceptions: true
     });
   } catch (e) { console.log("Google Chat 卡片傳送失敗：" + e.message); }
+}
+
+/**
+ * 📣 P1-D：把「代課／調課邀請」推到教師 Google Chat 空間（cardsV2＋同意/婉拒連結按鈕），
+ * 讓被邀老師在共用空間即時看到（手機有 Google Chat App 就有原生推播）。
+ * webhook 存 Script Property TEACHER_CHAT_WEBHOOK（不寫進原始碼）；未設定則靜默略過。
+ * opts.confirmed=true 表示管理員直接安排（已可出單），不顯示同意/婉拒按鈕。
+ */
+function notifyTeacherChatInvite_(data, serial, opts) {
+  opts = opts || {};
+  var webhook = PropertiesService.getScriptProperties().getProperty("TEACHER_CHAT_WEBHOOK");
+  if (!webhook) return;
+  var isSwap = (data.mode === 'swap');
+  var invited = isSwap ? data.teacherB : data.subTeacher;
+  var applicant = isSwap ? data.teacherA : data.leaveTeacher;
+  var when = isSwap ? (data.dateB + " " + formatTimeDisplay(data.timeB)) : (data.date + " " + formatTimeDisplay(data.timeKey));
+  var clsSub = isSwap ? (data.cls + " " + data.subB) : (data.cls + " " + data.subject);
+  var kind = isSwap ? "調課" : "代課";
+  var pending = !opts.confirmed;
+  var fallback = "🔔 " + invited + " 老師：" + applicant + " 向您提出" + kind + "（" + when + " " + clsSub + "）" + (pending ? "，請至系統確認" : "，已由教學組安排");
+  var widgets = [
+    { decoratedText: { topLabel: "受邀老師", text: "<b>" + invited + "</b>" } },
+    { decoratedText: { topLabel: "申請人", text: applicant } },
+    { decoratedText: { topLabel: "時間", text: when, wrapText: true } },
+    { decoratedText: { topLabel: "班級科目", text: clsSub, wrapText: true } },
+    { decoratedText: { topLabel: "單號", text: serial } }
+  ];
+  if (pending) {
+    widgets.push({ buttonList: { buttons: [
+      { text: "✅ 我同意", onClick: { openLink: { url: CONFIG.FRONTEND_URL + "?action=accept&serial=" + serial + "&token=" + CONFIG.TOKEN } } },
+      { text: "❌ 有困難", onClick: { openLink: { url: CONFIG.FRONTEND_URL + "?action=decline&serial=" + serial + "&token=" + CONFIG.TOKEN } } }
+    ] } });
+  }
+  var payload = {
+    text: fallback,
+    cardsV2: [{ cardId: "inv-" + serial, card: {
+      header: { title: "🔔 " + kind + "邀請 · " + invited + " 老師", subtitle: CONFIG.SCHOOL_SHORT + "調代課系統" },
+      sections: [{ widgets: widgets }]
+    } }]
+  };
+  try {
+    UrlFetchApp.fetch(webhook, { method: "post", contentType: "application/json; charset=UTF-8", payload: JSON.stringify(payload), muteHttpExceptions: true });
+  } catch (e) { console.log("教師 Chat 邀請通知失敗：" + e.message); }
 }
 
 /** 目前時間字串（Asia/Taipei） */
