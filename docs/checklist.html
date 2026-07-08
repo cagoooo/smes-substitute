@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="石門國小線上調代課系統｜115 學年（8 月）新學期上線對齊清單：教學組提供資料、需一起確認、系統端作業三部分，教學組與系統端一起確認對齊。">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>石門國小調代課系統 · 115 學年新學期對齊清單</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --panel:#ffffff; --panel-2:#fbfcfe;
+    --ink:#1f2a3a; --ink-soft:#516079; --ink-faint:#8a97ad;
+    --line:#e4e9f0; --line-strong:#d3dbe6;
+    --accent:#2563eb; --accent-soft:#eaf1ff;
+    --sim:#7c3aed; --sim-soft:#f3edff;
+    --ok:#15803d; --ok-soft:#e7f6ec;
+    --warn:#b45309; --warn-soft:#fdf1e3;
+    --shadow:0 1px 2px rgba(22,34,54,.04),0 8px 24px -12px rgba(22,34,54,.14);
+    --radius:14px;
+    --mono:ui-monospace,"SF Mono","Cascadia Mono",Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0e141f; --panel:#18212f; --panel-2:#141c28; --ink:#e7ecf4; --ink-soft:#a8b4c6; --ink-faint:#6f7d92;
+      --line:#26313f; --line-strong:#33404f; --accent:#5b8cff; --accent-soft:#182740; --sim:#a884ff; --sim-soft:#231a3a;
+      --ok:#5bd48a; --ok-soft:#12271b; --warn:#e5a24a; --warn-soft:#2c2113; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#f5f7fa; --panel:#ffffff; --panel-2:#fbfcfe; --ink:#1f2a3a; --ink-soft:#516079; --ink-faint:#8a97ad;
+    --line:#e4e9f0; --line-strong:#d3dbe6; --accent:#2563eb; --accent-soft:#eaf1ff; --sim:#7c3aed; --sim-soft:#f3edff;
+    --ok:#15803d; --ok-soft:#e7f6ec; --warn:#b45309; --warn-soft:#fdf1e3; --shadow:0 1px 2px rgba(22,34,54,.04),0 8px 24px -12px rgba(22,34,54,.14);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0e141f; --panel:#18212f; --panel-2:#141c28; --ink:#e7ecf4; --ink-soft:#a8b4c6; --ink-faint:#6f7d92;
+    --line:#26313f; --line-strong:#33404f; --accent:#5b8cff; --accent-soft:#182740; --sim:#a884ff; --sim-soft:#231a3a;
+    --ok:#5bd48a; --ok-soft:#12271b; --warn:#e5a24a; --warn-soft:#2c2113; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6);
+  }
+  *{box-sizing:border-box}
+  body{margin:0}
+  .wrap{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.7;-webkit-font-smoothing:antialiased;padding:0 20px 72px}
+  .col{max-width:820px;margin:0 auto}
+
+  header.hero{padding:52px 0 26px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 12px}
+  h1.title{font-size:clamp(26px,4.6vw,38px);line-height:1.2;margin:0 0 14px;font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+  .lede{font-size:16.5px;color:var(--ink-soft);margin:0;max-width:60ch}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+  .meta a{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-soft);background:var(--panel);border:1px solid var(--line);padding:7px 12px;border-radius:99px;text-decoration:none}
+  .meta a:hover{border-color:var(--accent);color:var(--accent)}
+
+  /* progress */
+  .prog{margin:22px 0 4px;display:flex;align-items:center;gap:14px}
+  .prog .bar{flex:1;height:10px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line);overflow:hidden}
+  .prog .fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--sim));border-radius:99px;transition:width .35s ease}
+  .prog .lbl{font-size:13px;font-weight:700;color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap}
+  @media (prefers-reduced-motion:reduce){.prog .fill{transition:none}}
+
+  section{padding-top:38px;scroll-margin-top:20px}
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
+  .sec-ico{font-size:22px;line-height:1;transform:translateY(1px)}
+  h2{font-size:21px;font-weight:800;margin:0;letter-spacing:-.01em}
+  .sec-sub{color:var(--ink-faint);font-size:13.5px;margin:3px 0 0}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 20px}
+  @media(max-width:560px){.card{padding:10px 14px}.wrap{padding:0 14px 56px}}
+
+  /* checkable rows */
+  .items{display:flex;flex-direction:column}
+  .chk{display:grid;grid-template-columns:26px 1fr;gap:13px;align-items:start;padding:15px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+  .chk:last-child{border-bottom:0}
+  .chk input{appearance:none;-webkit-appearance:none;margin:2px 0 0;width:22px;height:22px;border:2px solid var(--line-strong);border-radius:7px;background:var(--panel-2);cursor:pointer;flex:none;position:relative;transition:background .15s,border-color .15s}
+  .chk input:checked{background:var(--ok);border-color:var(--ok)}
+  .chk input:checked::after{content:"";position:absolute;left:6px;top:2px;width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+  .chk input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  .chk .t{font-weight:600;font-size:15.5px}
+  .chk .d{color:var(--ink-soft);font-size:13.5px;margin-top:2px}
+  .chk input:checked ~ .txt .t{text-decoration:line-through;color:var(--ink-faint)}
+  .chk input:checked ~ .txt .d{color:var(--ink-faint)}
+  .chk.crit .t{color:var(--warn)}
+  .crit-badge{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.04em;color:#fff;background:var(--warn);border-radius:6px;padding:1px 7px;margin-left:8px;vertical-align:2px}
+
+  /* info list (系統端) */
+  .info-list{display:flex;flex-direction:column;gap:11px;margin:0;padding:0;list-style:none}
+  .info-list li{display:grid;grid-template-columns:auto 1fr;gap:10px;font-size:14.5px;color:var(--ink-soft)}
+  .info-list li b{color:var(--ink)}
+  .info-list .ic{color:var(--accent)}
+
+  .note{display:grid;grid-template-columns:auto 1fr;gap:11px;border-radius:11px;padding:13px 15px;margin-top:22px;font-size:14px;border:1px solid var(--line)}
+  .note .ni{font-size:16px;line-height:1.5}
+  .note.warn{background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 34%,var(--line))}
+  .note b{color:var(--ink)}
+  .k{font-weight:700;background:var(--panel-2);border:1px solid var(--line-strong);border-radius:7px;padding:1px 8px;font-size:13.5px;white-space:nowrap}
+  .path{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);word-break:break-all}
+
+  footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:13px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
+  .site-credit{text-align:center;padding:20px 16px 0;font-size:13px;color:var(--ink-faint);font-family:var(--sans)}
+  .site-credit__heart{display:inline-block;margin:0 2px;filter:saturate(1.1)}
+  .site-credit__author{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;padding-bottom:1px;transition:color .2s,border-color .2s}
+  .site-credit__author:hover{color:var(--accent);border-bottom-color:var(--accent)}
+  a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+  .reset{background:none;border:1px solid var(--line);color:var(--ink-faint);font:inherit;font-size:12px;padding:4px 10px;border-radius:8px;cursor:pointer}
+  .reset:hover{border-color:var(--warn);color:var(--warn)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="col">
+    <header class="hero">
+      <p class="eyebrow">石門國小 · 線上調代課系統</p>
+      <h1 class="title">115 學年新學期上線 · 對齊清單</h1>
+      <p class="lede">系統核心功能都好了，8 月新學期只要備妥資料就能一次更新上線。這份給<b>教學組</b>與系統端一起確認對齊——勾選狀態會自動記在這台裝置上。</p>
+      <div class="meta">
+        <a href="./" rel="noreferrer">← 回調代課系統</a>
+        <a href="guide.html">📘 操作手冊</a>
+      </div>
+      <div class="prog">
+        <div class="bar"><div class="fill" id="progFill"></div></div>
+        <div class="lbl"><span id="progNum">0</span>／<span id="progTot">0</span> 已確認</div>
+      </div>
+    </header>
+
+    <!-- A -->
+    <section id="a">
+      <div class="sec-head"><span class="sec-ico">📥</span><div><h2>A · 請教學組／教務處提供</h2><p class="sec-sub">這些是更新系統需要的原始資料</p></div></div>
+      <div class="card"><div class="items">
+        <label class="chk"><input type="checkbox" data-k="a1"><span class="txt"><span class="t">115 上學期全校班級課表 PDF ＋ 本土語教師課表 PDF</span><span class="d">一～六年級，排課系統匯出，跟今年同格式；本土語課表一起附上。</span></span></label>
+        <label class="chk"><input type="checkbox" data-k="a2"><span class="txt"><span class="t">確認後的全校教師名單</span><span class="d">姓名、學校 Google 信箱、身分（管理員／行政／教師）。</span></span></label>
+        <label class="chk"><input type="checkbox" data-k="a3"><span class="txt"><span class="t">教師職務名冊（算鐘點費用）</span><span class="d">職稱、是否導師、是否行政、基本節數、減授節數。</span></span></label>
+        <label class="chk"><input type="checkbox" data-k="a4"><span class="txt"><span class="t">開學日 / 學期行事曆</span><span class="d">第一週週一的日期即可自動生成 21 週；要標假日再附國定假日／調整放假清單。</span></span></label>
+        <label class="chk"><input type="checkbox" data-k="a5"><span class="txt"><span class="t">代課鐘點費單價確認</span><span class="d">目前設 405 元/節，請確認 115 學年是否沿用。</span></span></label>
+      </div></div>
+    </section>
+
+    <!-- B -->
+    <section id="b">
+      <div class="sec-head"><span class="sec-ico">✅</span><div><h2>B · 要一起確認對齊</h2><p class="sec-sub">避免上線後才發現的落差</p></div></div>
+      <div class="card"><div class="items">
+        <label class="chk crit"><input type="checkbox" data-k="b1"><span class="txt"><span class="t">名單姓名 ＝ 課表姓名，一字不差<span class="crit-badge">最關鍵</span></span><span class="d">含簡繁、空格都要一致。不一致 → 那位老師登入會看到空白課表。這是最容易出錯、最該先對齊的一項。</span></span></label>
+        <label class="chk"><input type="checkbox" data-k="b2"><span class="txt"><span class="t">誰設「管理員／行政」</span><span class="d">能進「系統管理」、幫別人出單、看月結的人。</span></span></label>
+        <label class="chk"><input type="checkbox" data-k="b3"><span class="txt"><span class="t">本土語、族語／新住民語、資源班代課維持人工</span><span class="d">這幾類是跨班分組／外聘／抽離，不走系統自動媒合，由教學組人工協調。</span></span></label>
+        <label class="chk"><input type="checkbox" data-k="b4"><span class="txt"><span class="t">班級增減班</span><span class="d">有增減班沒關係，上傳新課表會自動反映，不需另外處理。</span></span></label>
+      </div></div>
+    </section>
+
+    <!-- C -->
+    <section id="c">
+      <div class="sec-head"><span class="sec-ico">🛠️</span><div><h2>C · 拿到資料後，系統端會做</h2><p class="sec-sub">這部分不用教學組操心，備妥 A 即可執行</p></div></div>
+      <div class="card">
+        <ul class="info-list">
+          <li><span class="ic">→</span><span>用 <span class="k">📥 課表匯入</span> 上傳 115 課表＋本土語 —— <b>自動先備份舊表</b>、重建、清快取、顯示新舊差異</span></li>
+          <li><span class="ic">→</span><span>更新 Email 名單（新進／離退／身分變更）</span></li>
+          <li><span class="ic">→</span><span>更新「週次對照表」為 115 行事曆</span></li>
+          <li><span class="ic">→</span><span>重建「教學節數」表（依職務名冊）→ 鐘點結算才準確</span></li>
+          <li><span class="ic">→</span><span>抽幾位老師 <span class="k">🎭 模擬登入</span> 驗證課表正確</span></li>
+          <li><span class="ic">→</span><span>確認／填入代課鐘點費單價</span></li>
+        </ul>
+        <div class="note warn"><span class="ni">💡</span><div>操作細節都在 <a href="guide.html" style="color:var(--accent);font-weight:600">📘 操作手冊</a>。系統網址：<span class="path">cagoooo.github.io/smes-substitute</span></div></div>
+      </div>
+    </section>
+
+    <div style="margin-top:26px;text-align:right"><button class="reset" id="resetBtn">重設勾選</button></div>
+
+    <footer>
+      <span>石門國小 線上調代課系統 · 115 學年上線對齊清單</span>
+      <span>桃園市龍潭區石門國民小學 · 系統維護：黃凱揚（阿凱）老師</span>
+    </footer>
+    <div class="site-credit">
+      Made with <span class="site-credit__heart" aria-label="愛心">❤️</span> by
+      <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5" target="_blank" rel="noopener noreferrer" class="site-credit__author">阿凱老師</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  (function(){
+    var KEY='smes_sub_checklist_115';
+    var boxes=[].slice.call(document.querySelectorAll('.chk input[type=checkbox]'));
+    var saved={};
+    try{ saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){}
+    var fill=document.getElementById('progFill'), num=document.getElementById('progNum'), tot=document.getElementById('progTot');
+    tot.textContent=boxes.length;
+    function refresh(){
+      var done=boxes.filter(function(b){return b.checked;}).length;
+      num.textContent=done;
+      fill.style.width=(boxes.length? (done/boxes.length*100):0)+'%';
+    }
+    function save(){
+      var o={}; boxes.forEach(function(b){ o[b.dataset.k]=b.checked; });
+      try{ localStorage.setItem(KEY,JSON.stringify(o)); }catch(e){}
+    }
+    boxes.forEach(function(b){
+      if(saved[b.dataset.k]) b.checked=true;
+      b.addEventListener('change',function(){ save(); refresh(); });
+    });
+    document.getElementById('resetBtn').addEventListener('click',function(){
+      boxes.forEach(function(b){ b.checked=false; }); save(); refresh();
+    });
+    refresh();
+  })();
+</script>
+</body>
+</html>
