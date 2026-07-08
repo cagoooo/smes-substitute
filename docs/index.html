@@ -18,8 +18,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.08-5">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.08-5">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.08-6">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.08-6">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -31,7 +31,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="og-preview.png?v=2026.07.08-5">
+  <meta name="og-preview.png?v=2026.07.08-6">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
@@ -89,6 +89,26 @@
     .choices.is-open { z-index: 1100; }
     .choices__list--dropdown, .choices__list[aria-expanded] { z-index: 1100; background-color: #fff; }
     .opacity-50 { opacity: 0.5; }
+
+    /* 📊 管理儀表板 */
+    #dash-pane{ --dash-accent:#2563eb; --dash-sim:#7c3aed; --dash-ok:#16a34a; }
+    .dash-tiles{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:16px; }
+    @media(max-width:600px){ .dash-tiles{ grid-template-columns:repeat(2,1fr); } }
+    .dash-tile{ background:#f8fafc; border:1px solid #e5e7eb; border-radius:12px; padding:12px 14px; text-align:center; }
+    .dash-tile .dt-n{ font-size:22px; font-weight:800; color:#1e293b; line-height:1.1; font-variant-numeric:tabular-nums; }
+    .dash-tile .dt-l{ font-size:12px; color:#64748b; margin-top:4px; }
+    .dash-grid{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+    @media(max-width:700px){ .dash-grid{ grid-template-columns:1fr; } }
+    .dash-card{ background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:14px 16px; }
+    .dash-card:first-child{ grid-column:1 / -1; }
+    .dash-h{ font-weight:800; font-size:14px; color:#334155; margin-bottom:12px; }
+    .dash-row{ margin-bottom:9px; }
+    .dash-row-t{ display:flex; justify-content:space-between; font-size:13px; margin-bottom:3px; }
+    .dash-row-v{ font-weight:700; color:#1e293b; font-variant-numeric:tabular-nums; }
+    .dash-track{ height:8px; background:#eef2f7; border-radius:99px; overflow:hidden; }
+    .dash-fill{ height:100%; border-radius:99px; transition:width .4s ease; }
+    .dash-note{ margin-top:10px; font-size:12px; color:#64748b; border-top:1px dashed #e5e7eb; padding-top:9px; }
+    @media (prefers-reduced-motion:reduce){ .dash-fill{ transition:none; } }
 
     /* 課表可橫向捲動，避免窄螢幕擠壓 */
     .grid-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -398,7 +418,10 @@
           <!-- 頁籤導覽 -->
           <ul class="nav nav-tabs mb-3" id="adminTabs" role="tablist">
             <li class="nav-item" role="presentation">
-              <button class="nav-link active fw-bold text-secondary" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-pane" type="button" role="tab" aria-controls="email-pane" aria-selected="true">🔑 教師 Email 授權名單</button>
+              <button class="nav-link active fw-bold text-secondary" id="dash-tab" data-bs-toggle="tab" data-bs-target="#dash-pane" type="button" role="tab" aria-controls="dash-pane" aria-selected="true">📊 管理儀表板</button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link fw-bold text-secondary" id="email-tab" data-bs-toggle="tab" data-bs-target="#email-pane" type="button" role="tab" aria-controls="email-pane" aria-selected="false">🔑 教師 Email 授權名單</button>
             </li>
             <li class="nav-item" role="presentation">
               <button class="nav-link fw-bold text-secondary" id="settle-tab" data-bs-toggle="tab" data-bs-target="#settle-pane" type="button" role="tab" aria-controls="settle-pane" aria-selected="false">💰 兼代課鐘點月結算</button>
@@ -409,8 +432,20 @@
           </ul>
           
           <div class="tab-content" id="adminTabContent">
+            <!-- 📊 分頁：管理儀表板 -->
+            <div class="tab-pane fade show active" id="dash-pane" role="tabpanel" aria-labelledby="dash-tab">
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                <div class="btn-group btn-group-sm" role="group" aria-label="區間">
+                  <button type="button" id="dashRangeMonth" class="btn btn-primary" onclick="setDashRange('month')">本月</button>
+                  <button type="button" id="dashRangeAll" class="btn btn-outline-primary" onclick="setDashRange('all')">本學期累計</button>
+                </div>
+                <span class="text-muted small" id="dashRangeLabel"></span>
+              </div>
+              <div id="dashBody"><div class="text-center text-muted py-5"><div class="spinner-border spinner-border-sm text-primary me-2"></div>統計中…</div></div>
+            </div>
+
             <!-- 🔑 分頁 1：教師 Email 授權名單 -->
-            <div class="tab-pane fade show active" id="email-pane" role="tabpanel" aria-labelledby="email-tab">
+            <div class="tab-pane fade" id="email-pane" role="tabpanel" aria-labelledby="email-tab">
               <div class="card p-3 mb-3 bg-light border-0" style="border-radius: 10px;">
                 <h6 class="fw-bold text-secondary mb-2">➕ 新增 / 編輯教師授權</h6>
                 <form id="adminEmailForm" onsubmit="event.preventDefault(); addOrUpdateUser();">
@@ -1459,7 +1494,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.07.08-5';   // 與 sw.js 同步
+    var APP_VERSION='2026.07.08-6';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;
@@ -1604,6 +1639,91 @@
     modal.show();
     loadAdminEmailList();
     initSettleMonths();
+    renderDashboard();
+  }
+
+  // ===== 📊 P1-B 管理儀表板（純前端，統計自 FULL_CHANGES）=====
+  var DASH_RANGE = 'month';
+  function setDashRange(r) {
+    DASH_RANGE = r;
+    document.getElementById('dashRangeMonth').className = 'btn ' + (r === 'month' ? 'btn-primary' : 'btn-outline-primary');
+    document.getElementById('dashRangeAll').className = 'btn ' + (r === 'all' ? 'btn-primary' : 'btn-outline-primary');
+    renderDashboard();
+  }
+  function dashBar(label, val, max, sub, color) {
+    var pct = max > 0 ? Math.round(val / max * 100) : 0;
+    return '<div class="dash-row"><div class="dash-row-t"><span>' + label + '</span><span class="dash-row-v">' + val + (sub || '') + '</span></div>'
+      + '<div class="dash-track"><div class="dash-fill" style="width:' + pct + '%;background:' + (color || 'var(--dash-accent)') + '"></div></div></div>';
+  }
+  function renderDashboard() {
+    var body = document.getElementById('dashBody');
+    if (!body) return;
+    if (!FULL_CHANGES || !FULL_CHANGES.allSub) { body.innerHTML = '<div class="text-muted text-center py-5">尚無資料</div>'; return; }
+    var monthPrefix = String(TODAY_STR || '').slice(0, 7);
+    var isMonth = DASH_RANGE === 'month';
+    document.getElementById('dashRangeLabel').textContent = isMonth ? ('統計區間：' + monthPrefix) : '統計區間：本學期全部紀錄';
+    var rateOf = {}; (FEE_CATEGORIES || []).forEach(function (c) { rateOf[c.name] = c.rate || 0; });
+
+    var subPeriods = 0, subFee = 0, subDocs = 0, swapCount = 0;
+    var byTeacher = {}, byGrade = {}, byCat = {}, byLeave = {};
+    (FULL_CHANGES.allSub || []).forEach(function (r) {
+      if (r[10] === '不成立') return;
+      if (isMonth && String(r[7] || '').slice(0, 7) !== monthPrefix) return;
+      var periods = (String(r[8] || '').match(/\d+/g) || ['1']).length;
+      subPeriods += periods; subDocs++;
+      subFee += (rateOf[String(r[9] || '').trim()] || 0) * periods;
+      String(r[3] || '').split(/[&/]/).forEach(function (n) { n = n.trim(); if (n) byTeacher[n] = (byTeacher[n] || 0) + periods; });
+      var g = String(r[5] || '').trim().charAt(0);
+      var gname = ({ '1': '一', '2': '二', '3': '三', '4': '四', '5': '五', '6': '六' })[g];
+      if (gname) byGrade[gname] = (byGrade[gname] || 0) + periods;
+      var cat = String(r[9] || '未分類').trim() || '未分類'; byCat[cat] = (byCat[cat] || 0) + periods;
+      String(r[2] || '').split(/[&/]/).forEach(function (n) { n = n.trim(); if (n) byLeave[n] = (byLeave[n] || 0) + periods; });
+    });
+    (FULL_CHANGES.allSwap || []).forEach(function (r) {
+      if (r[12] === '不成立') return;
+      if (isMonth && String(r[6] || '').slice(0, 7) !== monthPrefix) return;
+      swapCount++;
+    });
+
+    if (subDocs === 0 && swapCount === 0) {
+      body.innerHTML = '<div class="text-center text-muted py-5">📭 此區間尚無調代課紀錄。<br><span class="small">開始有代課後，這裡會顯示總量、鐘點費、各年級分布與代課公平度。</span></div>';
+      return;
+    }
+
+    // 摘要 tiles
+    var tiles = '<div class="dash-tiles">'
+      + '<div class="dash-tile"><div class="dt-n">' + subPeriods + '</div><div class="dt-l">代課節數</div></div>'
+      + '<div class="dash-tile"><div class="dt-n">$' + subFee.toLocaleString() + '</div><div class="dt-l">鐘點費預估</div></div>'
+      + '<div class="dash-tile"><div class="dt-n">' + subDocs + '</div><div class="dt-l">代課單數</div></div>'
+      + '<div class="dash-tile"><div class="dt-n">' + swapCount + '</div><div class="dt-l">調課次數</div></div>'
+      + '</div>';
+
+    // 代課公平度（被派節數排行）
+    var tArr = Object.keys(byTeacher).map(function (n) { return { n: n, v: byTeacher[n] }; }).sort(function (a, b) { return b.v - a.v; });
+    var tMax = tArr.length ? tArr[0].v : 0;
+    var fairHtml = tArr.length
+      ? tArr.slice(0, 12).map(function (t) { return dashBar(t.n, t.v, tMax, ' 節'); }).join('')
+      : '<div class="text-muted small">尚無代課</div>';
+    var fairNote = tArr.length > 1
+      ? '<div class="dash-note">最多 <b>' + tArr[0].n + '</b>（' + tArr[0].v + ' 節）· 最少 <b>' + tArr[tArr.length - 1].n + '</b>（' + tArr[tArr.length - 1].v + ' 節）——落差越大代表輪替越不平均。</div>'
+      : '';
+
+    // 各年級分布
+    var gOrder = ['一', '二', '三', '四', '五', '六'];
+    var gMax = Math.max.apply(null, gOrder.map(function (g) { return byGrade[g] || 0; }).concat([0]));
+    var gradeHtml = gOrder.map(function (g) { return dashBar(g + '年級', byGrade[g] || 0, gMax, ' 節', 'var(--dash-sim)'); }).join('');
+
+    // 鐘點類別分布
+    var cArr = Object.keys(byCat).map(function (c) { return { c: c, v: byCat[c] }; }).sort(function (a, b) { return b.v - a.v; });
+    var cMax = cArr.length ? cArr[0].v : 0;
+    var catHtml = cArr.length ? cArr.map(function (c) { return dashBar(c.c, c.v, cMax, ' 節', 'var(--dash-ok)'); }).join('') : '<div class="text-muted small">—</div>';
+
+    body.innerHTML = tiles
+      + '<div class="dash-grid">'
+      + '<div class="dash-card"><div class="dash-h">⚖️ 代課公平度（被派節數）</div>' + fairHtml + fairNote + '</div>'
+      + '<div class="dash-card"><div class="dash-h">🏫 各年級代課分布</div>' + gradeHtml + '</div>'
+      + '<div class="dash-card"><div class="dash-h">💰 鐘點類別分布</div>' + catHtml + '</div>'
+      + '</div>';
   }
 
   // 3. 讀寫與渲染授權教師清單 (P1-1)
