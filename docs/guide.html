@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="石門國小線上調代課系統｜給教學組長與資訊組長的操作手冊：上傳整學期課表、模擬教師登入、找人代課與節次調課、月結鐘點費。">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<title>石門國小調代課系統 · 組長操作手冊</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --panel:#ffffff; --panel-2:#fbfcfe;
+    --ink:#1f2a3a; --ink-soft:#516079; --ink-faint:#8a97ad;
+    --line:#e4e9f0; --line-strong:#d3dbe6;
+    --accent:#2563eb; --accent-soft:#eaf1ff;
+    --sim:#7c3aed; --sim-soft:#f3edff;
+    --ok:#15803d; --ok-soft:#e7f6ec;
+    --warn:#b45309; --warn-soft:#fdf1e3;
+    --shadow:0 1px 2px rgba(22,34,54,.04),0 8px 24px -12px rgba(22,34,54,.14);
+    --radius:14px;
+    --mono:ui-monospace,"SF Mono","Cascadia Mono",Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0e141f; --panel:#18212f; --panel-2:#141c28;
+      --ink:#e7ecf4; --ink-soft:#a8b4c6; --ink-faint:#6f7d92;
+      --line:#26313f; --line-strong:#33404f;
+      --accent:#5b8cff; --accent-soft:#182740;
+      --sim:#a884ff; --sim-soft:#231a3a;
+      --ok:#5bd48a; --ok-soft:#12271b;
+      --warn:#e5a24a; --warn-soft:#2c2113;
+      --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="light"]{
+    --bg:#f5f7fa; --panel:#ffffff; --panel-2:#fbfcfe; --ink:#1f2a3a; --ink-soft:#516079; --ink-faint:#8a97ad;
+    --line:#e4e9f0; --line-strong:#d3dbe6; --accent:#2563eb; --accent-soft:#eaf1ff; --sim:#7c3aed; --sim-soft:#f3edff;
+    --ok:#15803d; --ok-soft:#e7f6ec; --warn:#b45309; --warn-soft:#fdf1e3; --shadow:0 1px 2px rgba(22,34,54,.04),0 8px 24px -12px rgba(22,34,54,.14);
+  }
+  :root[data-theme="dark"]{
+    --bg:#0e141f; --panel:#18212f; --panel-2:#141c28; --ink:#e7ecf4; --ink-soft:#a8b4c6; --ink-faint:#6f7d92;
+    --line:#26313f; --line-strong:#33404f; --accent:#5b8cff; --accent-soft:#182740; --sim:#a884ff; --sim-soft:#231a3a;
+    --ok:#5bd48a; --ok-soft:#12271b; --warn:#e5a24a; --warn-soft:#2c2113; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0}
+  .wrap{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.7;
+    -webkit-font-smoothing:antialiased;padding:0 20px 72px}
+  .col{max-width:860px;margin:0 auto}
+
+  /* header */
+  header.hero{padding:52px 0 28px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 12px}
+  h1.title{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:0 0 14px;font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+  .lede{font-size:17px;color:var(--ink-soft);margin:0;max-width:60ch}
+  .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+  .meta a,.meta span{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-soft);
+    background:var(--panel);border:1px solid var(--line);padding:7px 12px;border-radius:99px;text-decoration:none}
+  .meta a:hover{border-color:var(--accent);color:var(--accent)}
+  .meta code{font-family:var(--mono);font-size:12.5px;color:var(--ink)}
+
+  /* quick nav */
+  nav.toc{position:sticky;top:0;z-index:5;margin:0 -20px 0;padding:12px 20px;
+    background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(8px);
+    border-bottom:1px solid var(--line)}
+  nav.toc .col{display:flex;flex-wrap:wrap;gap:8px}
+  nav.toc a{font-size:13px;font-weight:600;color:var(--ink-soft);text-decoration:none;
+    padding:6px 12px;border-radius:8px;border:1px solid transparent;white-space:nowrap}
+  nav.toc a:hover{color:var(--ink);background:var(--panel);border-color:var(--line)}
+
+  /* sections */
+  section{padding-top:44px;scroll-margin-top:64px}
+  .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:18px}
+  .sec-ico{font-size:22px;line-height:1;transform:translateY(1px)}
+  h2{font-size:22px;font-weight:800;margin:0;letter-spacing:-.01em}
+  .sec-sub{color:var(--ink-faint);font-size:13.5px;margin:3px 0 0}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:26px 28px}
+  @media(max-width:560px){.card{padding:20px 18px}.wrap{padding:0 14px 56px}}
+
+  /* numbered steps */
+  ol.steps{list-style:none;counter-reset:s;margin:0;padding:0;display:flex;flex-direction:column;gap:16px}
+  ol.steps>li{counter-increment:s;display:grid;grid-template-columns:30px 1fr;gap:14px;align-items:start}
+  ol.steps>li::before{content:counter(s);grid-row:1/99;width:30px;height:30px;border-radius:9px;
+    background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:14px;
+    display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
+  ol.steps .st-t{font-weight:600}
+  ol.steps .st-d{color:var(--ink-soft);font-size:14.5px;margin-top:2px}
+
+  /* inline ui tokens */
+  .k{font-family:var(--sans);font-weight:700;background:var(--panel-2);border:1px solid var(--line-strong);
+    border-radius:7px;padding:1px 8px;font-size:13.5px;white-space:nowrap;color:var(--ink)}
+  .path{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);word-break:break-all}
+  b.hl{color:var(--accent)}
+
+  /* callouts */
+  .note{display:grid;grid-template-columns:auto 1fr;gap:11px;border-radius:11px;padding:13px 15px;margin-top:16px;
+    font-size:14px;border:1px solid var(--line)}
+  .note .ni{font-size:16px;line-height:1.5}
+  .note.warn{background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 34%,var(--line))}
+  .note.tip{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 26%,var(--line))}
+  .note.ok{background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 30%,var(--line))}
+  .note b{color:var(--ink)}
+
+  /* role chips */
+  .roles{display:flex;flex-wrap:wrap;gap:12px;margin-top:4px}
+  .role{flex:1 1 200px;border:1px solid var(--line);border-radius:11px;padding:14px 16px;background:var(--panel-2)}
+  .role .rn{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px}
+  .role .rd{color:var(--ink-soft);font-size:13.5px;margin-top:5px}
+  .dot{width:9px;height:9px;border-radius:99px;display:inline-block}
+
+  /* mini summary card demo */
+  .demo{margin-top:16px;border:1px dashed var(--line-strong);border-radius:11px;padding:14px 16px;background:var(--panel-2)}
+  .demo .dh{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);font-weight:700;margin-bottom:8px}
+  .demo .big{font-size:15px}
+  .demo .money{color:var(--ok);font-weight:800}
+
+  footer{margin-top:56px;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:13px;
+    display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
+  footer a{color:var(--ink-soft);text-decoration:none}
+  footer a:hover{color:var(--accent)}
+  a:focus-visible,.meta a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+  /* 作者頁尾署名 */
+  .site-credit{text-align:center;padding:22px 16px 4px;font-size:13px;color:var(--ink-faint);font-family:var(--sans)}
+  .site-credit__heart{display:inline-block;margin:0 2px;filter:saturate(1.1)}
+  .site-credit__author{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;padding-bottom:1px;transition:color .2s,border-color .2s}
+  .site-credit__author:hover{color:var(--accent);border-bottom-color:var(--accent)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="col">
+    <header class="hero">
+      <p class="eyebrow">石門國小 · 線上調代課系統</p>
+      <h1 class="title">組長操作手冊</h1>
+      <p class="lede">給<b>教學組長</b>與<b>資訊組長</b>的交接指南——上傳整學期課表、驗證教師帳號、安排代課調課、月底結算鐘點費，四件事一次看懂。</p>
+      <div class="meta">
+        <a href="./" rel="noreferrer">← 回調代課系統</a>
+        <a href="https://cagoooo.github.io/smes-substitute/" target="_blank" rel="noreferrer">🌐 系統網址</a>
+        <span>🔑 適用身分：<b>管理員</b> / <b>行政</b></span>
+        <span>🗓️ 適用：每學期課表更新與日常調代課</span>
+      </div>
+    </header>
+  </div>
+
+  <nav class="toc">
+    <div class="col">
+      <a href="#login">登入與身分</a>
+      <a href="#upload">上傳課表</a>
+      <a href="#simulate">模擬登入</a>
+      <a href="#accounts">帳號管理</a>
+      <a href="#match">找代課 / 調課</a>
+      <a href="#settle">月結與鐘點</a>
+      <a href="#faq">常見問題</a>
+    </div>
+  </nav>
+
+  <div class="col">
+
+    <!-- 0 登入 -->
+    <section id="login">
+      <div class="sec-head"><span class="sec-ico">🔓</span><div><h2>登入與身分</h2><p class="sec-sub">誰能看到「系統管理」、老師怎麼進來</p></div></div>
+      <div class="card">
+        <p style="margin:0 0 16px">打開 <a href="https://cagoooo.github.io/smes-substitute/" target="_blank" rel="noreferrer" style="color:var(--accent);font-weight:600">系統網址</a>，用<b>學校 Google 帳號</b>（<span class="path">@mail2.smes.tyc.edu.tw</span>）登入。老師的信箱必須先在名單裡才進得去。</p>
+        <div class="roles">
+          <div class="role"><div class="rn"><span class="dot" style="background:var(--accent)"></span>管理員</div><div class="rd">完整權限：系統管理、課表匯入、名單、月結、代任何人出單。組長建議用這個。</div></div>
+          <div class="role"><div class="rn"><span class="dot" style="background:var(--sim)"></span>行政</div><div class="rd">可查詢/代其他老師出單、看月結，但少部分設定受限。</div></div>
+          <div class="role"><div class="rn"><span class="dot" style="background:var(--ink-faint)"></span>教師</div><div class="rd">只看與送出自己的調代課、看自己的本月彙整。</div></div>
+        </div>
+        <div class="note tip"><span class="ni">💡</span><div>看得到右上角 <span class="k">⚙️ 系統管理</span> 按鈕，代表你是「管理員」或「行政」。看不到就是身分還是「教師」，請到 Email 名單改。</div></div>
+      </div>
+    </section>
+
+    <!-- 1 上傳課表 -->
+    <section id="upload">
+      <div class="sec-head"><span class="sec-ico">📥</span><div><h2>上傳／更新整學期課表</h2><p class="sec-sub">每學期換新課表就靠這個，不用等工程</p></div></div>
+      <div class="card">
+        <ol class="steps">
+          <li><div><div class="st-t">開啟課表匯入</div><div class="st-d">右上 <span class="k">⚙️ 系統管理</span> → 分頁 <span class="k">📥 課表匯入</span>。</div></div></li>
+          <li><div><div class="st-t">選 PDF（可一次多選）</div><div class="st-d">把排課系統匯出的<b class="hl">各年級「班級課表」PDF</b>（一～六年級）＋<b class="hl">「本土語教師課表」PDF</b> 一起拖進去。</div></div></li>
+          <li><div><div class="st-t">解析並預覽</div><div class="st-d">按 <span class="k">🔍 解析並預覽</span>，重點看三個數字：班級數對不對、<b class="hl">排課衝突要是「無 ✅」</b>、以及「與目前課表的差異」（哪些老師新增／移除／課變了）。</div></div></li>
+          <li><div><div class="st-t">確認匯入</div><div class="st-d">沒問題按 <span class="k">✅ 確認匯入</span>。系統會<b>先自動備份</b>舊表成「_備份_日期時間」分頁，再重建，可還原。</div></div></li>
+        </ol>
+        <div class="note warn"><span class="ni">⚠️</span><div><b>排課衝突不是 0</b> 時先別匯入——通常是傳到重複年級、或傳到不是「班級課表」的檔。檢查後再試。</div></div>
+        <div class="note tip"><span class="ni">💡</span><div><b>科任／行政課表不用傳</b>（他們的課已在班級課表裡）。<b>族語／新住民語／資源班</b>維持人工處理。匯入會自動清快取，不必再手動清。</div></div>
+      </div>
+    </section>
+
+    <!-- 2 模擬登入 -->
+    <section id="simulate">
+      <div class="sec-head"><span class="sec-ico">🎭</span><div><h2>模擬教師登入</h2><p class="sec-sub">不用跟老師要密碼，就能看他登入後的畫面</p></div></div>
+      <div class="card">
+        <ol class="steps">
+          <li><div><div class="st-t">進教師名單</div><div class="st-d"><span class="k">⚙️ 系統管理</span> → 分頁 <span class="k">🔑 教師 Email 授權名單</span>。</div></div></li>
+          <li><div><div class="st-t">按該老師的「🎭 模擬」</div><div class="st-d">畫面立刻變成那位老師登入的樣子，頂部出現紫色橫幅。</div></div></li>
+          <li><div><div class="st-t">確認、然後退出</div><div class="st-d">看他的課表對不對；按橫幅 <span class="k">↩️ 退出模擬</span> 回到你自己。換下一位再點就好。</div></div></li>
+        </ol>
+        <div class="note tip"><span class="ni">🔍</span><div>用途：新學期匯完課表後，抽幾位老師確認<b>登入正常、課表正確</b>。若某老師<b>課表空白</b>，通常是「名單裡的姓名」跟「課表裡的姓名」對不上（簡繁、空格），到名單改成一致即可。</div></div>
+      </div>
+    </section>
+
+    <!-- 3 帳號管理 -->
+    <section id="accounts">
+      <div class="sec-head"><span class="sec-ico">🔑</span><div><h2>教師帳號管理</h2><p class="sec-sub">加人、改登入信箱、給組長權限</p></div></div>
+      <div class="card">
+        <ol class="steps">
+          <li><div><div class="st-t">新增 / 編輯 / 刪除老師</div><div class="st-d">在 <span class="k">🔑 教師 Email 授權名單</span> 分頁：填姓名、學校 Email、身分（教師／行政／管理員）→ <span class="k">💾 儲存</span>。</div></div></li>
+          <li><div><div class="st-t">改某位老師的登入信箱</div><div class="st-d">對他按 <span class="k">編輯</span> → 改 Email → 儲存。（老師換常用信箱時用這個。）</div></div></li>
+          <li><div><div class="st-t">授權教學組長為管理員</div><div class="st-d">也可在試算表選單 <span class="k">📅 系統出單功能</span> → <span class="k">🔑 授權教學組長為管理員</span> 一鍵處理。</div></div></li>
+        </ol>
+        <div class="note warn"><span class="ni">⚠️</span><div>老師登入被擋、顯示「<b>不在授權名單內</b>」＝這個信箱還沒加進名單。到這裡把他加上去（姓名要和課表一致）即可。</div></div>
+      </div>
+    </section>
+
+    <!-- 4 找代課 -->
+    <section id="match">
+      <div class="sec-head"><span class="sec-ico">🔍</span><div><h2>找人代課 / 節次調課</h2><p class="sec-sub">系統會幫你把最適合的老師排在前面</p></div></div>
+      <div class="card">
+        <ol class="steps">
+          <li><div><div class="st-t">選週次與老師</div><div class="st-d">上方選 <span class="k">週次</span> 與 <span class="k">查詢教師</span>（要請假調代課的那位）。</div></div></li>
+          <li><div><div class="st-t">點要調代的那一節</div><div class="st-d">在左側課表點該老師「要請假的那一格」。</div></div></li>
+          <li><div><div class="st-t">看媒合建議名單</div><div class="st-d">右側自動排序：<b class="hl">同班</b>、<b class="hl">同科</b>優先，再依「<b>本月已代次數少</b>（公平輪替）、<b>當天課少</b>（避開滿堂）」往前排。每位會顯示「本月已代 N・當天 N 節」，沒代過的有「本月未代」徽章。</div></div></li>
+          <li><div><div class="st-t">選模式並模擬</div><div class="st-d">選 <span class="k">🔍 找人代課</span> 或 <span class="k">🔁 節次調課</span> → 按某位老師的 <span class="k">模擬</span> → 看兩人課表對照確認無衝突。</div></div></li>
+          <li><div><div class="st-t">選鐘點類別、送出</div><div class="st-d">代課要選鐘點類別（公費／自費…）→ 送出。受邀老師會收到 Email，一鍵同意／拒絕。</div></div></li>
+          <li><div><div class="st-t">雙方確認 → 可出單</div><div class="st-d">對方同意後狀態變 <span class="k">可出單</span>，就能出單列印。</div></div></li>
+        </ol>
+        <div class="note tip"><span class="ni">💡</span><div>排序只是<b>建議</b>，你仍可指定任何空堂的老師。本土語代課因是跨班分組、外聘居多，維持人工協調。</div></div>
+      </div>
+    </section>
+
+    <!-- 5 月結 -->
+    <section id="settle">
+      <div class="sec-head"><span class="sec-ico">💰</span><div><h2>月結與鐘點費</h2><p class="sec-sub">教學組彙整、老師自己也查得到</p></div></div>
+      <div class="card">
+        <ol class="steps">
+          <li><div><div class="st-t">兼代課鐘點月結算</div><div class="st-d"><span class="k">⚙️ 系統管理</span> → 分頁 <span class="k">💰 兼代課鐘點月結算</span> → 選月份 → <span class="k">🔍 預覽結算</span> → <span class="k">📥 下載 Excel</span>（代課教師應領總表＋自費對帳＋逐筆明細）。</div></div></li>
+          <li><div><div class="st-t">出單列印（三聯單）</div><div class="st-d">在試算表選單 <span class="k">📅 系統出單功能</span> → 代課／調課通知單（教師聯・班級聯・留存聯，會自動合併連續節次）。</div></div></li>
+          <li><div><div class="st-t">老師自己看本月實績</div><div class="st-d">老師登入後，右側「📅 調代課異動摘要」上方會顯示本月彙整，不必等月結。</div></div></li>
+        </ol>
+        <div class="demo">
+          <div class="dh">老師個人頁 · 本月彙整（示意）</div>
+          <div class="big">代課 <b style="color:var(--accent)">3</b> 節　·　調課 <b>1</b> 次</div>
+          <div class="big">應領鐘點費預估 <span class="money">$1,215</span> <span style="color:var(--ink-faint);font-size:12px">（3 節 × 405 元）</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section id="faq">
+      <div class="sec-head"><span class="sec-ico">🧭</span><div><h2>常見問題 / 換學期</h2><p class="sec-sub">遇到狀況先看這裡</p></div></div>
+      <div class="card">
+        <div style="display:flex;flex-direction:column;gap:14px">
+          <div><b>Q. 老師說登入不了、「不在授權名單」？</b><div class="st-d" style="color:var(--ink-soft)">到 <span class="k">🔑 教師 Email 授權名單</span> 把他的學校信箱加進去（姓名與課表一致）。</div></div>
+          <div><b>Q. 老師登入了，但課表是空的？</b><div class="st-d" style="color:var(--ink-soft)">名單姓名和課表姓名對不上。用 <span class="k">🎭 模擬</span> 抽驗、到名單把姓名改成跟課表一致。</div></div>
+          <div><b>Q. 新學期要換整份課表？</b><div class="st-d" style="color:var(--ink-soft)">用 <span class="k">📥 課表匯入</span> 上傳新的「各年級班級課表 PDF ＋ 本土語教師課表 PDF」，系統會先備份舊表再重建。</div></div>
+          <div><b>Q. 畫面出現「系統有新版本」？</b><div class="st-d" style="color:var(--ink-soft)">按 <span class="k">重新整理載入</span> 即可更新到最新版；閒置時會自動更新並跳「已更新」提示。</div></div>
+          <div><b>Q. 改了課表卻看到舊的？</b><div class="st-d" style="color:var(--ink-soft)">匯入已會自動清快取；若真的還是舊的，試算表選單 <span class="k">🧹 清除系統快取</span> 點一下、再重新整理網頁。</div></div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <span>石門國小 線上調代課系統 · 組長操作手冊</span>
+      <span>桃園市龍潭區石門國民小學 · 系統維護：黃凱揚（阿凱）老師</span>
+    </footer>
+
+    <div class="site-credit">
+      Made with <span class="site-credit__heart" aria-label="愛心">❤️</span> by
+      <a href="https://www.smes.tyc.edu.tw/modules/tadnews/page.php?ncsn=11&nsn=16#a5"
+         target="_blank" rel="noopener noreferrer" class="site-credit__author">阿凱老師</a>
+    </div>
+
+  </div>
+</div>
+</body>
+</html>
