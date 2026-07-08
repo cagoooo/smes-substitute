@@ -18,8 +18,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.08-2">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.08-2">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.08-3">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.08-3">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -31,7 +31,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="og-preview.png?v=2026.07.08-2">
+  <meta name="og-preview.png?v=2026.07.08-3">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
@@ -263,6 +263,7 @@
             <span>📅 調代課異動摘要</span>
             <button class="btn btn-xs btn-light fw-bold" style="font-size:11px; padding:2px 8px; border-radius:6px;" onclick="exportCurrentMonthDocs()">📥 匯出當月 DOCX</button>
           </div>
+          <div id="personalSummary" class="px-3 py-2 small" style="background:#f8fafc; border-bottom:1px solid #e5e7eb;"></div>
           <div class="side-list-card">
             <table class="table table-sm table-hover m-0">
               <thead class="table-light small">
@@ -921,10 +922,46 @@
     /**
      * --- 5. 右側摘要渲染 (全量、分段排序、三色標籤) ---
      */
+    // 🎯 P1-6 教師個人頁：本月代課節數 / 應領鐘點費預估 / 調課次數
+    function renderPersonalMonthSummary(tNameList) {
+      const el = document.getElementById('personalSummary');
+      if (!el) return;
+      const monthPrefix = String(TODAY_STR || "").slice(0, 7);   // YYYY/MM
+      const rateOf = {};
+      (FEE_CATEGORIES || []).forEach(c => { rateOf[c.name] = c.rate || 0; });
+      let subPeriods = 0, subFee = 0, swapCount = 0;
+
+      (FULL_CHANGES.allSub || []).forEach(r => {
+        const subTList = String(r[3] || "").split(/[&/]/).map(n => n.trim());
+        if (!tNameList.some(n => subTList.includes(n))) return;         // 只算「我代別人」的
+        if (String(r[7] || "").slice(0, 7) !== monthPrefix) return;
+        if (r[10] === "不成立") return;
+        const periods = (String(r[8] || "").match(/\d+/g) || ["1"]).length;
+        subPeriods += periods;
+        subFee += (rateOf[String(r[9] || "").trim()] || 0) * periods;
+      });
+      (FULL_CHANGES.allSwap || []).forEach(r => {
+        if (r[12] === "不成立") return;
+        if (String(r[6] || "").slice(0, 7) !== monthPrefix) return;
+        const a = String(r[2] || "").split(/[&/]/).map(n => n.trim());
+        const b = String(r[3] || "").split(/[&/]/).map(n => n.trim());
+        if (tNameList.some(n => a.includes(n)) || tNameList.some(n => b.includes(n))) swapCount++;
+      });
+
+      el.innerHTML =
+        `<div class="fw-bold text-secondary mb-1">📊 ${monthPrefix} 本月彙整</div>` +
+        `<div>代課 <b class="text-primary">${subPeriods}</b> 節　·　調課 <b>${swapCount}</b> 次</div>` +
+        `<div>應領鐘點費預估 <b class="text-success">$${subFee.toLocaleString()}</b></div>` +
+        `<div class="text-muted" style="font-size:10px;">＊預估值，實際以教學組月結算為準</div>`;
+    }
+
     function renderPersonalChangeList(tName) {
       const listBody = document.getElementById('personalChangeList');
       const tNameList = String(tName).split(/[&/]/).map(n => n.trim());
       let allRecords = [];
+
+      // 🎯 P1-6 本月彙整：代課節數 / 應領鐘點費預估 / 調課次數
+      renderPersonalMonthSummary(tNameList);
 
     // 1. 處理代課紀錄 (Sub)
   FULL_CHANGES.allSub.forEach(r => {
@@ -1421,7 +1458,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.07.08-2';   // 與 sw.js 同步
+    var APP_VERSION='2026.07.08-3';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;
