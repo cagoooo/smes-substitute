@@ -18,8 +18,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-1">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-1">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-2">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-2">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -31,7 +31,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="og-preview.png?v=2026.07.09-1">
+  <meta name="og-preview.png?v=2026.07.09-2">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
@@ -221,8 +221,9 @@
           <button class="btn btn-outline-secondary" id="btnNextT" onclick="navTeacher(1)">▶</button>
         </div>
       </div>
-      <div class="col-md-3 text-end pt-3">
-        <span class="top-instruction text-primary" id="step2-hint">2. 點擊欲調代課之該節課程</span>
+      <div class="col-md-3 text-end pt-2">
+        <button class="btn btn-sm btn-warning fw-bold mb-1" onclick="openLeavePlanner()" title="預告某天請假，逐節自己找代課">🗓️ 我要預告請假</button>
+        <span class="top-instruction text-primary d-block" id="step2-hint">2. 點擊欲調代課之該節課程</span>
       </div>
     </div>
 
@@ -552,6 +553,28 @@
     </div>
   </div>
 
+  <!-- 🗓️ P1-F 預告請假 Modal -->
+  <div class="modal fade" id="leavePlannerModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content" style="border-radius:16px;border:0;">
+        <div class="modal-header bg-warning" style="border-top-left-radius:16px;border-top-right-radius:16px;">
+          <h5 class="modal-title fw-bold">🗓️ 預告請假 · 逐節找代課</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body p-4">
+          <div class="mb-3">
+            <label class="small fw-bold text-muted mb-1">選擇請假日期</label>
+            <select id="leaveDateSelect" class="form-select" onchange="onLeaveDateChange()"></select>
+          </div>
+          <div id="leaveClassList" class="text-muted small">請先選擇日期，系統會列出您當天的課，逐節找代課。</div>
+          <div class="alert alert-light border mt-3 mb-0 small text-muted" style="border-radius:10px;">
+            💡 點某一節的「找代課」→ 會帶您到媒合名單挑代課老師、送出邀請（對方會收到 Email 與 Google Chat 通知）。假日不會出現在清單。
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
   <!-- 📥 pdf.js：管理員一鍵上傳課表 PDF 前端解析用（與後端 ScheduleImport 同款邏輯） -->
@@ -780,7 +803,7 @@
       if (!tName) return;
 
       showLoading(true, "載入中...");
-      api("weekly", [parseInt(weekIdx)]).then(res => {
+      return api("weekly", [parseInt(weekIdx)]).then(res => {
         CURRENT_WEEK_DATES = res.weekDates;
         WEEKLY_CHANGES = res.weeklyChanges;
         FULL_CHANGES = res.fullChanges;
@@ -1260,6 +1283,59 @@
       showSubstituteSuggestions();
     }
 
+    // ===== 🗓️ P1-F 預告請假：選日期 → 列出當天的課 → 逐節導入既有找代課流程 =====
+    function openLeavePlanner() {
+      const tName = teacherChoices ? teacherChoices.getValue(true) : document.getElementById('tSelector').value;
+      if (!tName) { alert('請先選擇教師。'); return; }
+      const sel = document.getElementById('leaveDateSelect');
+      sel.innerHTML = '<option value="">— 請選擇日期 —</option>';
+      (WEEK_LIST || []).forEach(function (w) {
+        (w.dates || []).forEach(function (d, di) {
+          if (!d) return; // 假日留空 → 跳過
+          sel.add(new Option(d + '（星期' + ['一', '二', '三', '四', '五'][di] + '）· ' + w.label, w.index + '|' + di));
+        });
+      });
+      const box = document.getElementById('leaveClassList');
+      box.className = 'text-muted small';
+      box.innerHTML = '請先選擇日期，系統會列出您當天的課，逐節找代課。';
+      new bootstrap.Modal(document.getElementById('leavePlannerModal')).show();
+    }
+    function onLeaveDateChange() {
+      const v = document.getElementById('leaveDateSelect').value;
+      const box = document.getElementById('leaveClassList');
+      if (!v) { box.className = 'text-muted small'; box.innerHTML = '請先選擇日期。'; return; }
+      const parts = v.split('|'), dIdx = +parts[1], dayChar = ['一', '二', '三', '四', '五'][dIdx];
+      const weekIdx = parts[0];
+      const tName = teacherChoices ? teacherChoices.getValue(true) : document.getElementById('tSelector').value;
+      const sched = (ALL_DATA && ALL_DATA.teacherSchedules && ALL_DATA.teacherSchedules[tName]) || {};
+      let items = [];
+      for (let p = 1; p <= 8; p++) { const c = sched[dayChar + p]; if (c && c.cls) items.push({ p: p, sub: c.sub, cls: c.cls }); }
+      if (!items.length) { box.className = 'small'; box.innerHTML = '<div class="text-muted py-2">您當天沒有排課（空堂）。</div>'; return; }
+      box.className = '';
+      box.innerHTML = '<div class="fw-bold small text-secondary mb-2">您當天共 ' + items.length + ' 節課，點「找代課」逐節安排：</div>'
+        + items.map(function (it) {
+          return '<div class="d-flex align-items-center justify-content-between border rounded px-3 py-2 mb-2">'
+            + '<div><b>第' + it.p + '節</b>　' + it.sub + '　<span class="text-muted">' + it.cls + '</span></div>'
+            + '<button class="btn btn-sm btn-primary fw-bold" onclick="planFindSub(\'' + weekIdx + '\',' + dIdx + ',' + it.p + ',\'' + it.cls + '\')">找代課</button>'
+            + '</div>';
+        }).join('');
+    }
+    function planFindSub(weekIdx, dIdx, period, cls) {
+      try { bootstrap.Modal.getInstance(document.getElementById('leavePlannerModal')).hide(); } catch (e) {}
+      const timeKey = ['一', '二', '三', '四', '五'][dIdx] + period;
+      document.getElementById('weekSelector').value = weekIdx;
+      loadWeeklySchedule().then(function () {
+        const tName = teacherChoices ? teacherChoices.getValue(true) : document.getElementById('tSelector').value;
+        CLICKED_DATA = { timeKey: timeKey, cls: cls, teacher: tName, date: CURRENT_WEEK_DATES[dIdx], rawAttr: '' };
+        document.getElementById('refClassName').innerText = cls;
+        const tl = document.getElementById('targetTimeLabel'); if (tl) tl.innerText = '已選定：' + CLICKED_DATA.date + ' (' + timeKey + ')';
+        const hint = document.getElementById('step2-hint'); hint.className = 'top-instruction text-success d-block'; hint.innerText = '✅ 已選定：' + CLICKED_DATA.date + ' 第' + period + '節';
+        document.getElementById('swapWeekSelector').value = weekIdx;
+        changeMatchMode('sub'); // 切到「找人代課」並自動帶出媒合名單（CLICKED_DATA 已設）
+        const ra = document.getElementById('resultArea'); if (ra) ra.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+
     function changeMatchMode(mode) {
       CURRENT_MATCH_MODE = mode;
       document.getElementById('mode-sub').classList.toggle('active', mode === 'sub');
@@ -1497,7 +1573,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.07.09-1';   // 與 sw.js 同步
+    var APP_VERSION='2026.07.09-2';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;
