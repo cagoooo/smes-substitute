@@ -18,8 +18,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-9">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-9">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-10">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-10">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -31,7 +31,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="og-preview.png?v=2026.07.09-9">
+  <meta name="og-preview.png?v=2026.07.09-10">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
@@ -660,53 +660,122 @@
        }
      })();
 
-    // --- 0b. 後端 API 包裝（text/plain 避免 CORS preflight）---
-    async function api(fn, args) {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ fn: fn, args: args || [], idToken: ID_TOKEN })
-      });
-      const j = await res.json();
-      if (j.error === "UNAUTHENTICATED") {
-        // token 過期：回到登入畫面重新登入
-        showLoading(false);
-        document.getElementById('loginOverlay').style.display = 'flex';
-        throw new Error("登入已過期，請重新登入");
-      }
-      if (j.error) throw new Error(j.error);
-      return j.result;
-    }
+     // --- 0b. 後端 API 包裝（text/plain 避免 CORS preflight）---
+     let pendingReauth = null;
 
-    // --- 0d. 登出 ---
-    function logout() {
-      try { google.accounts.id.disableAutoSelect(); } catch (e) {}
-      ID_TOKEN = null;
-      location.reload();
-    }
+     async function api(fn, args) {
+       const res = await fetch(API_URL, {
+         method: "POST",
+         headers: { "Content-Type": "text/plain;charset=utf-8" },
+         body: JSON.stringify({ fn: fn, args: args || [], idToken: ID_TOKEN })
+       });
+       const j = await res.json();
+       if (j.error === "UNAUTHENTICATED") {
+         // 如果登入疊層已經是顯示的，代表手動登入中或失敗，直接拋出錯誤
+         if (document.getElementById('loginOverlay').style.display === 'flex') {
+           throw new Error("請先登入 Google 帳號");
+         }
+         
+         // 嘗試在背景靜默刷新 token
+         showLoading(true, "身分驗證已過期，正在重新驗證...");
+         try {
+           await refreshGoogleToken();
+           showLoading(false);
+           // 重新用新的 ID_TOKEN 呼叫自己
+           return await api(fn, args);
+         } catch (reauthErr) {
+           showLoading(false);
+           document.getElementById('loginOverlay').style.display = 'flex';
+           throw new Error("驗證已過期，請點擊按鈕重新登入");
+         }
+       }
+       if (j.error) throw new Error(j.error);
+       return j.result;
+     }
 
-    // --- 0c. Google 登入（GIS）---
-    function initGis() {
-      google.accounts.id.initialize({
-        client_id: OAUTH_CLIENT_ID,
-        callback: onGisCredential,
-        auto_select: true
-      });
-      google.accounts.id.renderButton(document.getElementById('gisButton'), {
-        theme: "filled_blue", size: "large", text: "signin_with", locale: "zh_TW", width: 280
-      });
-    }
+     function refreshGoogleToken() {
+       if (pendingReauth) return pendingReauth;
+       
+       pendingReauth = new Promise((resolve, reject) => {
+         // 超時處理：10 秒後若無回應則視同失敗
+         const timeoutId = setTimeout(() => {
+           cleanup();
+           reject(new Error("重新驗證超時"));
+         }, 10000);
+         
+         function cleanup() {
+           clearTimeout(timeoutId);
+           window.onReauthSuccess = null;
+           window.onReauthFailed = null;
+           pendingReauth = null;
+         }
+         
+         window.onReauthSuccess = (newToken) => {
+           cleanup();
+           resolve(newToken);
+         };
+         
+         window.onReauthFailed = (err) => {
+           cleanup();
+           reject(err);
+         };
+         
+         // 嘗試使用 Google One Tap 自動登入 (prompt)
+         try {
+           google.accounts.id.prompt((notification) => {
+             if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+               // 無法靜默/自動 One Tap 登入（例如無 session 或第三方 Cookie 被封鎖）
+               // 則必須顯示手動登入疊層
+               cleanup();
+               document.getElementById('loginOverlay').style.display = 'flex';
+               reject(new Error("需要手動點選登入"));
+             }
+           });
+         } catch (e) {
+           cleanup();
+           document.getElementById('loginOverlay').style.display = 'flex';
+           reject(e);
+         }
+       });
+       
+       return pendingReauth;
+     }
 
-    async function onGisCredential(resp) {
-      ID_TOKEN = resp.credential;
-      document.getElementById('loginOverlay').style.display = 'none';
+     // --- 0d. 登出 ---
+     function logout() {
+       try { google.accounts.id.disableAutoSelect(); } catch (e) {}
+       ID_TOKEN = null;
+       location.reload();
+     }
 
-      // 📨 信件確認模式：網址帶 action + serial + token
-      const params = new URLSearchParams(location.search);
-      if (params.get("action") && params.get("serial") && params.get("token")) {
-        runConfirmFlow(params.get("action"), params.get("serial"), params.get("token"));
-        return;
-      }
+     // --- 0c. Google 登入（GIS）---
+     function initGis() {
+       google.accounts.id.initialize({
+         client_id: OAUTH_CLIENT_ID,
+         callback: onGisCredential,
+         auto_select: true
+       });
+       google.accounts.id.renderButton(document.getElementById('gisButton'), {
+         theme: "filled_blue", size: "large", text: "signin_with", locale: "zh_TW", width: 280
+       });
+     }
+
+     async function onGisCredential(resp) {
+       ID_TOKEN = resp.credential;
+       document.getElementById('loginOverlay').style.display = 'none';
+
+       // 🎯 優先解鎖正在等待重新驗證的 API 請求
+       if (window.onReauthSuccess) {
+         window.onReauthSuccess(resp.credential);
+         return;
+       }
+
+       // 📨 信件確認模式：網址帶 action + serial + token
+       const params = new URLSearchParams(location.search);
+       if (params.get("action") && params.get("serial") && params.get("token")) {
+         runConfirmFlow(params.get("action"), params.get("serial"), params.get("token"));
+         return;
+       }
 
       showLoading(true, "身分驗證中...");
       try {
@@ -1934,7 +2003,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.07.09-9';   // 與 sw.js 同步
+    var APP_VERSION='2026.07.09-10';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;

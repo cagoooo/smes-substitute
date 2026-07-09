@@ -148,6 +148,9 @@ function findUserByEmail_(email) {
  */
 function getConfirmInfo_(serial, token, email) {
   if (token !== CONFIG.TOKEN) return { error: "安全性驗證失敗" };
+  const userAuth = findUserByEmail_(email);
+  if (!userAuth) return { error: "您的帳號不在授權名單內，無權查看此單據資訊" };
+
   const checkRes = getDocumentStatus(serial);
   if (checkRes.error) return { error: checkRes.error };
 
@@ -155,6 +158,15 @@ function getConfirmInfo_(serial, token, email) {
   const invitedTeacherName = row[3];
   const invitedTeacherEmails = getEmailByName(invitedTeacherName);
   const isInvited = !!(invitedTeacherEmails && invitedTeacherEmails.toLowerCase().includes(email));
+
+  // 🎯 後端驗證查看權限（二次防線）：只有受邀教師、請假人本人、管理員、行政才能取得單據內容
+  const applicantName = row[2];
+  const isApplicant = (userAuth.name === applicantName);
+  const hasAccess = isInvited || isApplicant || userAuth.isAdmin || userAuth.isStaff;
+  
+  if (!hasAccess) {
+    return { error: "權限不足：您非本單據之關係人，無權查看單據細節" };
+  }
 
   const isSwap = serial.startsWith("SWP");
   let info;
@@ -720,8 +732,25 @@ function processAdjustmentFor_(data, email) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const userAuth = findUserByEmail_(email); // 🎯 取得目前操作者身份
   if (!userAuth) return { success: false, error: "您的帳號不在授權名單內" };
+  
+  const lock = LockService.getScriptLock();
   try {
+    lock.waitLock(15000); // 鎖定等待最多 15 秒
     const isSwap = (data.mode === 'swap');
+    
+    // 🎯 後端二次防線安全校驗：非管理員與行政，只能幫自己（leaveTeacher 或 teacherA）提交申請
+    if (!userAuth.isAdmin && !userAuth.isStaff) {
+      if (isSwap) {
+        if (data.teacherA !== userAuth.name) {
+          throw new Error("權限不足：您無權代表其他教師提交調課申請。");
+        }
+      } else {
+        if (data.leaveTeacher !== userAuth.name) {
+          throw new Error("權限不足：您無權代表其他教師提交代課申請。");
+        }
+      }
+    }
+    
     const sheetName = isSwap ? CONFIG.sheetSwap : CONFIG.sheetSub;
     const sheet = ss.getSheetByName(sheetName);
     
@@ -787,6 +816,8 @@ function processAdjustmentFor_(data, email) {
       { label: "時間", text: nowStr_() }
     ], "⚠️ 使用者送出調代課申請時失敗。");
     return { success: false, error: e.message };
+  } finally {
+    lock.releaseLock();
   }
 }
 
@@ -1348,15 +1379,21 @@ function updateEmailListFor_(list, email) {
   const s = ss.getSheetByName(CONFIG.sheetEmail);
   if (!s) throw new Error("找不到工作表：" + CONFIG.sheetEmail);
   
-  s.clear();
-  s.appendRow(["姓名", "Email", "身份等級"]);
-  if (list && list.length > 0) {
-    s.getRange(2, 1, list.length, 3).setValues(list);
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000);
+    s.clear();
+    s.appendRow(["姓名", "Email", "身份等級"]);
+    if (list && list.length > 0) {
+      s.getRange(2, 1, list.length, 3).setValues(list);
+    }
+    
+    const cacheKey = "smes_sub_cache_" + CONFIG.sheetEmail;
+    CacheService.getScriptCache().remove(cacheKey);
+    return { success: true };
+  } finally {
+    lock.releaseLock();
   }
-  
-  const cacheKey = "smes_sub_cache_" + CONFIG.sheetEmail;
-  CacheService.getScriptCache().remove(cacheKey);
-  return { success: true };
 }
 
 /**

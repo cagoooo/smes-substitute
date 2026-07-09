@@ -181,31 +181,38 @@ function writeSheet_(ss, name, rows, frozenRows, frozenCols) {
 function importScheduleWithBackup_(classes, supplement) {
   if (!classes || !classes.length) throw new Error('沒有可匯入的課表資料。');
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var built = buildScheduleSheets_(classes, supplement);
-
-  var backups = [
-    backupSheet_(ss, '排課資料庫'),
-    backupSheet_(ss, '教師課表')
-  ].filter(String);
-
-  writeSheet_(ss, '排課資料庫', built.dbRows, 1, 0);
-  writeSheet_(ss, '教師課表', built.teacherRows, 2, 2);
-
-  // 🧹 課表已重建 → 清掉舊快取，否則前端仍讀到舊的範例課表（導致查得到老師卻課表空白）
+  
+  var lock = LockService.getScriptLock();
   try {
-    var keys = ['smes_sub_cache_' + CONFIG.sheetEmail, 'smes_sub_cache_' + CONFIG.sheetTeacher, 'smes_sub_cache_' + CONFIG.sheetHours];
-    (CONFIG.elasticTeacherSheets || []).forEach(function (s) { keys.push('smes_sub_cache_' + s); });
-    CacheService.getScriptCache().removeAll(keys);
-  } catch (e) { /* 快取清除失敗不擋匯入 */ }
+    lock.waitLock(30000); // 匯入耗時較長，鎖定等待上限設為 30 秒
+    var built = buildScheduleSheets_(classes, supplement);
 
-  return {
-    ok: true,
-    backups: backups,
-    classes: built.stats.classes,
-    dbCells: built.stats.dbCells,
-    teachers: built.stats.teachers,
-    btCells: built.stats.btCells,
-    supplementTeachers: built.stats.supplementTeachers,
-    collisions: built.stats.collisions
-  };
+    var backups = [
+      backupSheet_(ss, '排課資料庫'),
+      backupSheet_(ss, '教師課表')
+    ].filter(String);
+
+    writeSheet_(ss, '排課資料庫', built.dbRows, 1, 0);
+    writeSheet_(ss, '教師課表', built.teacherRows, 2, 2);
+
+    // 🧹 課表已重建 → 清掉舊快取，否則前端仍讀到舊的範例課表（導致查得到老師卻課表空白）
+    try {
+      var keys = ['smes_sub_cache_' + CONFIG.sheetEmail, 'smes_sub_cache_' + CONFIG.sheetTeacher, 'smes_sub_cache_' + CONFIG.sheetHours];
+      (CONFIG.elasticTeacherSheets || []).forEach(function (s) { keys.push('smes_sub_cache_' + s); });
+      CacheService.getScriptCache().removeAll(keys);
+    } catch (e) { /* 快取清除失敗不擋匯入 */ }
+
+    return {
+      ok: true,
+      backups: backups,
+      classes: built.stats.classes,
+      dbCells: built.stats.dbCells,
+      teachers: built.stats.teachers,
+      btCells: built.stats.btCells,
+      supplementTeachers: built.stats.supplementTeachers,
+      collisions: built.stats.collisions
+    };
+  } finally {
+    lock.releaseLock();
+  }
 }
