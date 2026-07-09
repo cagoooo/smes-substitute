@@ -18,8 +18,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-3">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-3">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-4">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-4">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -31,7 +31,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="og-preview.png?v=2026.07.09-3">
+  <meta name="og-preview.png?v=2026.07.09-4">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
@@ -695,8 +695,13 @@
         wSel.value = res.initialWeekIndex; swSel.value = res.initialWeekIndex;
 
         res.teacherList.forEach(t => tSel.add(new Option(t, t)));
+        // 🎯 讓有課表名單的管理員/行政/教師，一登入都預設先選中自己
+        if (res.teacherList.includes(USER.name)) {
+          tSel.value = USER.name;
+        }
+
         if (USER.role === "教師") {
-          tSel.value = USER.name; tSel.disabled = true;
+          tSel.disabled = true;
           document.getElementById('btnPrevT').style.display = 'none'; document.getElementById('btnNextT').style.display = 'none';
         } else {
           teacherChoices = new Choices('#tSelector', { searchEnabled: true, itemSelectText: '', searchPlaceholderValue: '搜尋教師...' });
@@ -1842,7 +1847,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.07.09-3';   // 與 sw.js 同步
+    var APP_VERSION='2026.07.09-4';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;
