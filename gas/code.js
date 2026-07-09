@@ -759,13 +759,25 @@ function processAdjustmentFor_(data, email) {
       notifyTeacherChatInvite_(data, serial, { confirmed: false });
     }
 
-    // ✅ 成功通知：有人成功送出一筆調代課申請
-    pushChatCard_("success", (data.mode === 'swap' ? "新調課申請" : "新代課申請"), [
+    // ✅ 成功通知：有人成功送出一筆調代課申請（含受邀教師/班級科目/時間，讓教學組一眼看懂）
+    var _isSwap = (data.mode === 'swap');
+    var _applicant = _isSwap ? data.teacherA : data.leaveTeacher;
+    var _invited = _isSwap ? data.teacherB : data.subTeacher;
+    var _when = _isSwap ? (data.dateA + " " + formatTimeDisplay(data.timeA)) : (data.date + " " + formatTimeDisplay(data.timeKey));
+    var _clsSub = _isSwap ? (data.cls + " " + data.subA) : (data.cls + " " + data.subject);
+    var _appLabel = _applicant + (userAuth.name !== _applicant ? "（由 " + userAuth.name + " 代填）" : "");
+    var _note = userAuth.isAdmin
+      ? ("🟢 教學組已直接安排 " + _invited + " 老師代 " + _applicant + " 的「" + _clsSub + "」（" + _when + "），可出單。")
+      : ("🟡 已通知 " + _invited + " 老師代 " + _applicant + " 的「" + _clsSub + "」（" + _when + "），待對方確認。");
+    pushChatCard_("success", (_isSwap ? "新調課申請" : "新代課申請"), [
       { label: "單號", text: serial },
-      { label: "申請人", text: (data.mode === 'swap' ? data.teacherA : data.leaveTeacher) + "（" + userAuth.name + "）" },
+      { label: "申請人（請假）", text: _appLabel },
+      { label: (_isSwap ? "調課對象" : "受邀代課"), text: _invited },
+      { label: "班級科目", text: _clsSub },
+      { label: (_isSwap ? "調動時間" : "代課時間"), text: _when },
       { label: "狀態", text: status },
-      { label: "時間", text: nowStr_() }
-    ], userAuth.isAdmin ? "🟢 教學組直接確認，可出單。" : "🟡 已寄邀請信給受邀教師，待對方確認。");
+      { label: "送出時間", text: nowStr_() }
+    ], _note);
 
     return { success: true, serial: serial };
   } catch (e) {
