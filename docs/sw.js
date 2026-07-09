@@ -1,4 +1,4 @@
-const BUILD_VERSION = '2026.07.09-5';   // 每次部署改它（bump-version.ps1 會一起改）
+const BUILD_VERSION = '2026.07.09-6';   // 每次部署改它（bump-version.ps1 會一起改）
 const CACHE = 'smes-sub-' + BUILD_VERSION;
 const PRECACHE = [
   './', './index.html', './favicon.svg', './favicon.ico', './apple-touch-icon.png',
