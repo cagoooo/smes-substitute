@@ -176,12 +176,12 @@
   <!-- 🔑 Google 登入疊層 -->
   <div id="loginOverlay" style="position:fixed; inset:0; background:#f1f5f9; z-index:9000; display:flex; align-items:center; justify-content:center;">
     <div style="background:white; padding:40px 36px; border-radius:16px; box-shadow:0 10px 25px rgba(0,0,0,0.1); text-align:center; max-width:420px; width:92%; margin-bottom:60px;">
-      <div style="font-size:52px;">📅</div>
-      <h4 class="fw-bold mt-2" style="color:#1e293b;">石門國小調代課系統</h4>
-      <p class="text-muted" style="font-size:14px;">請使用學校提供的 Google 帳號登入</p>
+      <div id="loginIcon" style="font-size:52px;">📅</div>
+      <h4 id="loginTitle" class="fw-bold mt-2" style="color:#1e293b;">石門國小調代課系統</h4>
+      <p id="loginDesc" class="text-muted" style="font-size:14px;">請使用學校提供的 Google 帳號登入</p>
       <div id="gisButton" class="d-flex justify-content-center my-3"></div>
       <div id="loginError" class="text-danger small fw-bold" style="display:none;"></div>
-      <p class="text-muted mt-3" style="font-size:12px;">若無法進入，請聯繫教學組確認您在授權名單內。</p>
+      <p id="loginNote" class="text-muted mt-3" style="font-size:12px;">若無法進入，請聯繫教學組確認您在授權名單內。</p>
     </div>
     <footer class="site-credit" style="position:absolute; bottom:0; left:0; right:0; border:0; background:transparent;">
       Made with <span class="site-credit__heart" aria-label="愛心">❤️</span> by
@@ -616,6 +616,33 @@
     const API_URL = "https://script.google.com/macros/s/AKfycbzeGgZklhc6C0dpQADW_YMGbvjUw5EYvmwetG6k0FeyfyVtmuPBacyOU1F2qedrfk1qIw/exec";
     const OAUTH_CLIENT_ID = "495024952462-50atnhe2kdiun5fpdfq6dqq4d76n59oj.apps.googleusercontent.com";
     let ID_TOKEN = null;
+
+    // 📨 檢查是否有信件確認參數，並動態變更登入畫面提示
+    (function checkConfirmMode() {
+      const params = new URLSearchParams(location.search);
+      if (params.get("action") && params.get("serial") && params.get("token")) {
+        const action = params.get("action");
+        const serial = params.get("serial");
+        const actionText = action === "accept" ? "同意" : "拒絕";
+        
+        // 確保 DOM 載入後執行
+        document.addEventListener("DOMContentLoaded", () => {
+          const iconEl = document.getElementById("loginIcon");
+          const titleEl = document.getElementById("loginTitle");
+          const descEl = document.getElementById("loginDesc");
+          const noteEl = document.getElementById("loginNote");
+          
+          if (iconEl) iconEl.innerText = "📨";
+          if (titleEl) titleEl.innerText = "調代課單據確認";
+          if (descEl) {
+            descEl.innerHTML = `您已在信件中選擇了 <b>${actionText}</b>。<br>請點選下方藍色按鈕登入，以進行單據 <b>${serial}</b> 的最終確認。`;
+          }
+          if (noteEl) {
+            noteEl.innerHTML = `⚠️ 系統將驗證您的身分是否為該單據的受邀教師。<br>若有任何問題，請聯繫學校教學組。`;
+          }
+        });
+      }
+    })();
 
     // --- 0b. 後端 API 包裝（text/plain 避免 CORS preflight）---
     async function api(fn, args) {
