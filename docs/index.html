@@ -18,8 +18,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-7">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-7">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-8">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-8">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -31,12 +31,41 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="og-preview.png?v=2026.07.09-7">
+  <meta name="og-preview.png?v=2026.07.09-8">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css" />
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+  <script>
+  // 🛡️ App 內建瀏覽器防護：Google OAuth 禁止在 WebView 登入（403 disallowed_useragent）
+  // LINE → 自動帶 openExternalBrowser=1 跳外部瀏覽器；FB/IG/Messenger 等 → 顯示引導提示
+  (function () {
+    var ua = navigator.userAgent || "";
+    var isLine = / Line\//i.test(ua) || /\bLine\//i.test(ua);
+    var isOtherInApp = /FBAN|FBAV|FB_IAB|Instagram|Messenger|MicroMessenger|KAKAOTALK/i.test(ua);
+    if (isLine && location.search.indexOf("openExternalBrowser=1") === -1) {
+      // LINE 支援此參數：自動改用外部瀏覽器重開本頁（保留原有參數，如信件確認連結）
+      var sep = location.search ? "&" : "?";
+      location.replace(location.href.split("#")[0] + sep + "openExternalBrowser=1" + location.hash);
+      return;
+    }
+    if (isOtherInApp || isLine) {
+      // 跳轉沒生效（舊版 LINE）或其他 App 內建瀏覽器 → 顯示全版引導，避免使用者白撞 Google 封鎖
+      document.addEventListener("DOMContentLoaded", function () {
+        var d = document.createElement("div");
+        d.id = "inAppGuard";
+        d.style.cssText = "position:fixed;inset:0;z-index:99999;background:#0f172a;color:#fff;display:flex;align-items:center;justify-content:center;padding:24px;font-family:'Microsoft JhengHei',sans-serif;";
+        d.innerHTML = '<div style="max-width:420px;text-align:center;background:#1e293b;border-radius:16px;padding:32px 26px;">'
+          + '<div style="font-size:52px;">🌐</div>'
+          + '<h4 style="font-weight:800;margin:14px 0 10px;">請改用瀏覽器開啟</h4>'
+          + '<p style="font-size:15px;line-height:1.8;color:#cbd5e1;margin:0;">您目前是在 <b style="color:#fbbf24;">App 內建瀏覽器</b>（LINE／FB 等）中開啟本頁，Google 基於安全政策<b>禁止在此環境登入</b>。<br><br>請點右下角（或右上角）「<b style="color:#fff;">⋯</b>」選單 → 選「<b style="color:#4ade80;">用預設瀏覽器開啟</b>」，即可正常登入。</p>'
+          + '</div>';
+        document.body.appendChild(d);
+      });
+    }
+  })();
+  </script>
   <style>
     :root { --in-color: #dcfce7; --out-color: #e9ecef; --elastic-color: #f0fdf4; }
     body { background-color: #f0f2f5; font-family: "Microsoft JhengHei", sans-serif; overflow-x: hidden; font-size: 16px; }
@@ -1847,7 +1876,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.07.09-7';   // 與 sw.js 同步
+    var APP_VERSION='2026.07.09-8';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;

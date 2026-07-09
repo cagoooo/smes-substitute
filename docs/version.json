@@ -1,1 +1,1 @@
-{"version":"2026.07.09-7","notes":"checklist頁新增\u0027系統已完成功能\u0027展示區塊(10項白話成果,置頂供教學組長展示)+8月只剩三件事提示"}
+{"version":"2026.07.09-8","notes":"修復手機LINE/FB內建瀏覽器登入被Google封鎖(403 disallowed_useragent):LINE自動帶openExternalBrowser=1跳外部瀏覽器(保留信件確認參數+防迴圈),FB/IG顯示引導提示;guide FAQ與checklist同步補充"}
