@@ -1,1 +1,1 @@
-{"version":"2026.07.09-8","notes":"修復手機LINE/FB內建瀏覽器登入被Google封鎖(403 disallowed_useragent):LINE自動帶openExternalBrowser=1跳外部瀏覽器(保留信件確認參數+防迴圈),FB/IG顯示引導提示;guide FAQ與checklist同步補充"}
+{"version":"2026.07.09-9","notes":"優化調代課信件確認流程的同意與拒絕視覺差異"}
