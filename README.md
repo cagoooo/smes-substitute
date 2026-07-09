@@ -72,6 +72,7 @@ clasp update-deployment <deploymentId> -V <版本號> -d "更新說明"
 
 ## 📅 更新日誌與開發進度表
 
+- **`[x]` (2026.07.09-10)**：**實作 P0 級後端二次權限防線、寫入並行鎖與前端靜默 Token 刷新**。後端 `processAdjustmentFor_` 限制非管理員/行政僅能幫自己提交調代課，`getConfirmInfo_` 限制只有關係人能讀取單據；在所有資料寫入 API（提交、匯入、更新名單）引入 `LockService` 解決並發寫入衝突；前端 `api` 支援 `UNAUTHENTICATED` 時透過 One Tap 靜默自癒重新驗證並自動重試請求。配套執行 `bump-version.ps1` 升版快取並以 clasp 部署 v48 上線。
 - **`[x]` (2026.07.09-9)**：**優化信件確認模式（同意/拒絕）的 UI/UX 與 PWA 升版快取自癒**。當老師點選信件按鈕跳轉至登入頁時，新增動態主題提示（同意套用 3px 🟢綠框與綠色 Badge/Alert；拒絕套用 3px 🔴紅框與紅色 Badge/Alert），消除登入時的認知障礙，並加強確認卡片的配色與專屬執行按鈕。配套執行 `bump-version.ps1` 升級 PWA 版本號至 `2026.07.09-9` 以強制瀏覽器重整更新 `sw.js` 快取。
 - **`[x]` (2026.07.09 · 後端 GAS @47)**：**管理員 Chat 通知補上關鍵資訊**。原本「新代課／調課申請」卡只有單號／申請人／狀態／時間，看不出「向誰代課」；現補上**受邀教師、班級科目、代課時間**，且底部摘要（手機推播預覽）也寫明「已通知 X 老師代 Y 的『班級科目』（時間）」，教學組一眼看懂。
 - **`[x]` (2026.07.09-8)**：**修復手機 LINE／FB 內建瀏覽器登入被 Google 封鎖**（教學組長實際回報 `403: disallowed_useragent`——Google 禁止在 App 內建 WebView 做 OAuth 登入）。LINE 開啟時自動帶 `openExternalBrowser=1` 跳外部瀏覽器（保留信件確認參數、防無限迴圈）；FB／IG／Messenger 等顯示全版引導提示「用預設瀏覽器開啟」。guide FAQ 與 checklist 同步補充。
