@@ -18,8 +18,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-2">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-2">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-3">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.09-3">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -31,7 +31,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="og-preview.png?v=2026.07.09-2">
+  <meta name="og-preview.png?v=2026.07.09-3">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
@@ -663,6 +663,7 @@
     let USER, WEEK_LIST, TEACHER_LIST, CURRENT_WEEK_DATES, ALL_DATA, WEEKLY_CHANGES, FULL_CHANGES, TODAY_STR, FEE_CATEGORIES = [];
     let REAL_INIT = null, SIMULATING = false;   // 🎭 管理員模擬教師登入用
     let CURRENT_MATCH_MODE = 'sub', CLICKED_DATA = {}, PENDING_DATA = null, teacherChoices = null;
+    let SELECTED_CELLS = [], PENDING_DATA_LIST = [];
 
     function initSystem(res) {
         USER = res.user;
@@ -813,7 +814,15 @@
         renderPersonalChangeList(tName);
 
         document.getElementById('resultArea').style.display = 'flex';
-        resetSwapReference();
+        
+        // 🎯 支援多節次自動載入與媒合
+        if (SELECTED_CELLS.length > 0 && SELECTED_CELLS[0].teacher === tName) {
+          showSubstituteSuggestions();
+        } else {
+          SELECTED_CELLS = [];
+          CLICKED_DATA = {};
+          resetSwapReference();
+        }
         showLoading(false);
       }).catch(err => { showLoading(false); alert("載入失敗：" + err.message); });
     }
@@ -971,6 +980,13 @@
             if (USER.role !== "行政" && !['sub_out', 'swap_out'].includes(item.type)) {
               style = "cursor:pointer;";
               clickAttr = `onclick="handleCellClick(this, '${k}', '${item.cls}', '${tName}', '${item.rawAttr || ""}')"`;
+            }
+            // 🎯 判斷是否已被多選，若是則加上 cell-selected
+            const dIdx = ['一','二','三','四','五'].indexOf(d);
+            const date = CURRENT_WEEK_DATES[dIdx];
+            const isSelected = SELECTED_CELLS.some(c => c.timeKey === k && c.date === date && c.teacher === tName);
+            if (isSelected) {
+              clsName += " cell-selected";
             }
           }
           bodyH += `<td class="teacher-mini-cell ${clsName}" style="${style}" ${clickAttr}>${v}</td>`;
@@ -1271,19 +1287,79 @@
     // --- 其餘輔助函式 (完整保留) ---
     function handleCellClick(el, timeKey, cls, tName, rawAttr) {
       if (!cls || cls === "---") return;
-      document.querySelectorAll('.teacher-mini-cell').forEach(c => c.classList.remove('cell-selected'));
-      el.classList.add('cell-selected');
       const dIdx = ['一','二','三','四','五'].indexOf(timeKey[0]);
-      CLICKED_DATA = { timeKey, cls, teacher: tName, date: CURRENT_WEEK_DATES[dIdx], rawAttr };
-      document.getElementById('refClassName').innerText = cls;
-      document.getElementById('targetTimeLabel').innerText = `已選定：${CLICKED_DATA.date} (${timeKey})`;
+      const date = CURRENT_WEEK_DATES[dIdx];
+      
+      // 🎯 找出是否已經在已選取列表中
+      const existingIdx = SELECTED_CELLS.findIndex(c => c.timeKey === timeKey && c.date === date);
+      
+      if (existingIdx > -1) {
+        // 如果已經選了，取消選取該節次
+        SELECTED_CELLS.splice(existingIdx, 1);
+        if (el) el.classList.remove('cell-selected');
+      } else {
+        // 如果沒選過：
+        // 檢查如果請假教師不同，或者沒有選取過，就清空舊的
+        if (SELECTED_CELLS.length > 0 && SELECTED_CELLS[0].teacher !== tName) {
+          document.querySelectorAll('.teacher-mini-cell').forEach(c => c.classList.remove('cell-selected'));
+          SELECTED_CELLS = [];
+        }
+        
+        // 加入選取
+        SELECTED_CELLS.push({ el, timeKey, cls, teacher: tName, date, rawAttr });
+        if (el) el.classList.add('cell-selected');
+      }
+      
+      // 如果選取列表為空，重設狀態
+      if (SELECTED_CELLS.length === 0) {
+        CLICKED_DATA = {};
+        document.getElementById('refClassName').innerText = "---";
+        document.getElementById('targetTimeLabel').innerText = "未選定";
+        document.getElementById('step2-hint').className = "top-instruction text-muted";
+        document.getElementById('step2-hint').innerText = "💡 請先選取左側課表課堂";
+        document.getElementById('mode-swap').disabled = false; // 恢復啟用調課按鈕
+        resetSwapReference();
+        return;
+      }
+      
+      // 排序 SELECTED_CELLS，讓顯示順序好看
+      SELECTED_CELLS.sort((a, b) => {
+        if (a.date !== b.date) return a.date.localeCompare(b.date);
+        const pA = parseInt(a.timeKey.replace(/[^\d]/g, ''));
+        const pB = parseInt(b.timeKey.replace(/[^\d]/g, ''));
+        return pA - pB;
+      });
+      
+      // 使用第一個選取的格子作為 CLICKED_DATA（保留相容性）
+      CLICKED_DATA = SELECTED_CELLS[0];
+      
+      // 🎯 多選時強制進入「找代課」模式，且停用「節次調課」按鈕
+      if (SELECTED_CELLS.length > 1) {
+        CURRENT_MATCH_MODE = 'sub';
+        document.getElementById('mode-sub').classList.add('active');
+        document.getElementById('mode-swap').classList.remove('active');
+        document.getElementById('mode-swap').disabled = true;
+        document.getElementById('swapWeekArea').className = "d-none";
+      } else {
+        document.getElementById('mode-swap').disabled = false;
+      }
+      
+      // 更新介面上的已選定說明
+      const uniqueCls = [...new Set(SELECTED_CELLS.map(c => c.cls))].join(" & ");
+      document.getElementById('refClassName').innerText = uniqueCls;
+      
+      // 時間標籤：例如 "已選定：07/15(三3), 07/15(三4)"
+      const timeLabels = SELECTED_CELLS.map(c => `${c.date.slice(5)} (${c.timeKey})`).join(", ");
+      document.getElementById('targetTimeLabel').innerText = `已選定：${timeLabels}`;
+      
       document.getElementById('step2-hint').className = "top-instruction text-success";
-      document.getElementById('step2-hint').innerText = "✅ 已選定節次";
+      document.getElementById('step2-hint').innerText = `✅ 已選定 ${SELECTED_CELLS.length} 節課`;
+      
       document.getElementById('swapWeekSelector').value = document.getElementById('weekSelector').value;
       showSubstituteSuggestions();
     }
 
-    // ===== 🗓️ P1-F 預告請假：選日期 → 列出當天的課 → 逐節導入既有找代課流程 =====
+    // ===== 🗓️ P1-F 預告請假：選日期 → 列出當天的課 → 逐節或複選導入既有找代課流程 =====
     function openLeavePlanner() {
       const tName = teacherChoices ? teacherChoices.getValue(true) : document.getElementById('tSelector').value;
       if (!tName) { alert('請先選擇教師。'); return; }
@@ -1297,7 +1373,7 @@
       });
       const box = document.getElementById('leaveClassList');
       box.className = 'text-muted small';
-      box.innerHTML = '請先選擇日期，系統會列出您當天的課，逐節找代課。';
+      box.innerHTML = '請先選擇日期，系統會列出您當天的課，可以複選或逐節找代課。';
       new bootstrap.Modal(document.getElementById('leavePlannerModal')).show();
     }
     function onLeaveDateChange() {
@@ -1312,13 +1388,28 @@
       for (let p = 1; p <= 8; p++) { const c = sched[dayChar + p]; if (c && c.cls) items.push({ p: p, sub: c.sub, cls: c.cls }); }
       if (!items.length) { box.className = 'small'; box.innerHTML = '<div class="text-muted py-2">您當天沒有排課（空堂）。</div>'; return; }
       box.className = '';
-      box.innerHTML = '<div class="fw-bold small text-secondary mb-2">您當天共 ' + items.length + ' 節課，點「找代課」逐節安排：</div>'
-        + items.map(function (it) {
-          return '<div class="d-flex align-items-center justify-content-between border rounded px-3 py-2 mb-2">'
-            + '<div><b>第' + it.p + '節</b>　' + it.sub + '　<span class="text-muted">' + it.cls + '</span></div>'
-            + '<button class="btn btn-sm btn-primary fw-bold" onclick="planFindSub(\'' + weekIdx + '\',' + dIdx + ',' + it.p + ',\'' + it.cls + '\')">找代課</button>'
-            + '</div>';
-        }).join('');
+      
+      let html = '<div class="fw-bold small text-secondary mb-2">您當天共 ' + items.length + ' 節課，可勾選多節連續課或點「找代課」：</div>';
+      html += items.map(function (it, idx) {
+        const val = `${weekIdx}|${dIdx}|${it.p}|${it.cls}`;
+        return '<div class="d-flex align-items-center justify-content-between border rounded px-3 py-2 mb-2">'
+          + '<div class="form-check m-0 d-flex align-items-center">'
+          + '  <input class="form-check-input leave-course-check me-2" type="checkbox" value="' + val + '" id="leaveCheck' + idx + '">'
+          + '  <label class="form-check-label w-100 cursor-pointer" for="leaveCheck' + idx + '">'
+          + '    <b>第' + it.p + '節</b>　' + it.sub + '　<span class="text-muted">' + it.cls + '</span>'
+          + '  </label>'
+          + '</div>'
+          + '<button class="btn btn-sm btn-primary fw-bold" onclick="planFindSub(\'' + weekIdx + '\',' + dIdx + ',' + it.p + ',\'' + it.cls + '\')">找代課</button>'
+          + '</div>';
+      }).join('');
+      
+      // 🎯 批次媒合按鈕
+      html += '<div class="mt-3 text-end">'
+        + '  <button class="btn btn-warning btn-sm fw-bold w-100 py-2 shadow-sm" style="border-radius:8px;" onclick="planFindSubBatch()">'
+        + '    🔍 批次媒合已勾選課堂'
+        + '  </button>'
+        + '</div>';
+      box.innerHTML = html;
     }
     function planFindSub(weekIdx, dIdx, period, cls) {
       try { bootstrap.Modal.getInstance(document.getElementById('leavePlannerModal')).hide(); } catch (e) {}
@@ -1326,17 +1417,99 @@
       document.getElementById('weekSelector').value = weekIdx;
       loadWeeklySchedule().then(function () {
         const tName = teacherChoices ? teacherChoices.getValue(true) : document.getElementById('tSelector').value;
-        CLICKED_DATA = { timeKey: timeKey, cls: cls, teacher: tName, date: CURRENT_WEEK_DATES[dIdx], rawAttr: '' };
+        
+        // 🎯 單選重設 SELECTED_CELLS
+        SELECTED_CELLS = [{ el: null, timeKey, cls, teacher: tName, date: CURRENT_WEEK_DATES[dIdx], rawAttr: '' }];
+        CLICKED_DATA = SELECTED_CELLS[0];
+        
         document.getElementById('refClassName').innerText = cls;
         const tl = document.getElementById('targetTimeLabel'); if (tl) tl.innerText = '已選定：' + CLICKED_DATA.date + ' (' + timeKey + ')';
         const hint = document.getElementById('step2-hint'); hint.className = 'top-instruction text-success d-block'; hint.innerText = '✅ 已選定：' + CLICKED_DATA.date + ' 第' + period + '節';
         document.getElementById('swapWeekSelector').value = weekIdx;
+        document.getElementById('mode-swap').disabled = false; // 恢復調課按鈕
         changeMatchMode('sub'); // 切到「找人代課」並自動帶出媒合名單（CLICKED_DATA 已設）
+        const ra = document.getElementById('resultArea'); if (ra) ra.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    }
+    // 🎯 預告請假多選處理
+    function planFindSubBatch() {
+      const checkboxes = document.querySelectorAll('.leave-course-check:checked');
+      if (checkboxes.length === 0) {
+        alert("⚠️ 請至少勾選一節課堂進行比對！");
+        return;
+      }
+      
+      try { bootstrap.Modal.getInstance(document.getElementById('leavePlannerModal')).hide(); } catch (e) {}
+      
+      const firstVal = checkboxes[0].value;
+      const parts = firstVal.split('|');
+      const weekIdx = parts[0];
+      const dIdx = parseInt(parts[1]);
+      
+      document.getElementById('weekSelector').value = weekIdx;
+      loadWeeklySchedule().then(function () {
+        const tName = teacherChoices ? teacherChoices.getValue(true) : document.getElementById('tSelector').value;
+        
+        SELECTED_CELLS = [];
+        checkboxes.forEach(cb => {
+          const p = cb.value.split('|');
+          const period = parseInt(p[2]);
+          const cls = p[3];
+          const timeKey = ['一', '二', '三', '四', '五'][dIdx] + period;
+          const date = CURRENT_WEEK_DATES[dIdx];
+          
+          SELECTED_CELLS.push({
+            el: null,
+            timeKey: timeKey,
+            cls: cls,
+            teacher: tName,
+            date: date,
+            rawAttr: ''
+          });
+        });
+        
+        // 排序 SELECTED_CELLS
+        SELECTED_CELLS.sort((a, b) => {
+          if (a.date !== b.date) return a.date.localeCompare(b.date);
+          const pA = parseInt(a.timeKey.replace(/[^\d]/g, ''));
+          const pB = parseInt(b.timeKey.replace(/[^\d]/g, ''));
+          return pA - pB;
+        });
+        
+        CLICKED_DATA = SELECTED_CELLS[0];
+        
+        // 🎯 多選時強制進入「找代課」模式，且停用「節次調課」按鈕
+        if (SELECTED_CELLS.length > 1) {
+          CURRENT_MATCH_MODE = 'sub';
+          document.getElementById('mode-sub').classList.add('active');
+          document.getElementById('mode-swap').classList.remove('active');
+          document.getElementById('mode-swap').disabled = true;
+          document.getElementById('swapWeekArea').className = "d-none";
+        } else {
+          document.getElementById('mode-swap').disabled = false;
+        }
+        
+        const uniqueCls = [...new Set(SELECTED_CELLS.map(c => c.cls))].join(" & ");
+        document.getElementById('refClassName').innerText = uniqueCls;
+        
+        const timeLabels = SELECTED_CELLS.map(c => `${c.date.slice(5)} (${c.timeKey})`).join(", ");
+        document.getElementById('targetTimeLabel').innerText = `已選定：${timeLabels}`;
+        
+        const hint = document.getElementById('step2-hint');
+        hint.className = 'top-instruction text-success d-block';
+        hint.innerText = `✅ 已選定 ${SELECTED_CELLS.length} 節課`;
+        
+        document.getElementById('swapWeekSelector').value = weekIdx;
+        changeMatchMode('sub'); // 切到「找人代課」並自動帶出媒合名單
         const ra = document.getElementById('resultArea'); if (ra) ra.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
     }
 
     function changeMatchMode(mode) {
+      if (SELECTED_CELLS.length > 1 && mode === 'swap') {
+        alert("⚠️ 多選節次時僅支援「找人代課」模式，無法進行調課。");
+        return;
+      }
       CURRENT_MATCH_MODE = mode;
       document.getElementById('mode-sub').classList.toggle('active', mode === 'sub');
       document.getElementById('mode-swap').classList.toggle('active', mode === 'swap');
@@ -1359,19 +1532,22 @@
       const tarWIdx = parseInt(CURRENT_MATCH_MODE === 'swap' ? document.getElementById('swapWeekSelector').value : curWIdx);
       listBody.innerHTML = `<tr><td colspan="4" class="text-center p-3">媒合中...</td></tr>`;
       try {
+        // 🎯 支援多選班級老師聯集
         let sameClassTeachers = new Set();
-        let classBaseSched = ALL_DATA.classData[cls]?.schedule || {};
-        for (let k in classBaseSched) {
-          let tRaw = classBaseSched[k].split('<br><small>')[1]?.replace('</small>', '') || "";
-          tRaw.split(/[&/]/).forEach(n => sameClassTeachers.add(n.trim()));
-        }
+        SELECTED_CELLS.forEach(cell => {
+          let classBaseSched = ALL_DATA.classData[cell.cls]?.schedule || {};
+          for (let k in classBaseSched) {
+            let tRaw = classBaseSched[k].split('<br><small>')[1]?.replace('</small>', '') || "";
+            tRaw.split(/[&/]/).forEach(n => sameClassTeachers.add(n.trim()));
+          }
+        });
+        
         const currentTeacherSubject = ALL_DATA.teacherSubjectMap[tName] || "";
         
         if (CURRENT_MATCH_MODE === 'sub') {
-          const dayChar = timeK[0];
           const monthPrefix = String(CLICKED_DATA.date || "").slice(0, 7);   // YYYY/MM
 
-          // 🎯 P1-4 公平輪替：本月每位老師「已被派代課」次數（排除不成立單）
+          // 🎯 P1-4 公平輪替：本月每位老師「已被派代課」次數
           const subCount = {};
           (FULL_CHANGES.allSub || []).forEach(r => {
             if (String(r[7] || "").slice(0, 7) !== monthPrefix) return;
@@ -1379,34 +1555,55 @@
             String(r[3] || "").split(/[&/]/).forEach(nm => { nm = nm.trim(); if (nm) subCount[nm] = (subCount[nm] || 0) + 1; });
           });
 
-          // 候選 = 該節空堂者；順便算當天授課負荷（避開滿堂）
+          // 🎯 候選人空堂比對 (多節皆須空堂)
           let cand = [];
           TEACHER_LIST.forEach(n => {
             if (n === tName || n === "無固定教師" || n === "輪流") return;
-            const wk = simulateTeacherWeek(n, curWIdx);
-            if (!isCellAvailable(wk, timeK)) return;
-            let dayLoad = 0;
-            for (let p = 1; p <= 8; p++) { if (!isCellAvailable(wk, dayChar + p)) dayLoad++; }
+            
+            let isAllAvailable = true;
+            SELECTED_CELLS.forEach(cell => {
+              const cellWeekIdx = (cell.weekIdx !== undefined) ? cell.weekIdx : curWIdx;
+              const wk = simulateTeacherWeek(n, cellWeekIdx);
+              if (!isCellAvailable(wk, cell.timeKey)) {
+                isAllAvailable = false;
+              }
+            });
+            if (!isAllAvailable) return;
+
+            // 🎯 當天授課負荷：若選定節次跨多天，取平均負荷
+            let dayLoadSum = 0;
+            const uniqueDays = [...new Set(SELECTED_CELLS.map(c => {
+              const cellWeekIdx = (c.weekIdx !== undefined) ? c.weekIdx : curWIdx;
+              return cellWeekIdx + '|' + c.timeKey[0];
+            }))];
+            uniqueDays.forEach(dayStr => {
+              const [wIdx, dayChar] = dayStr.split('|');
+              const wk = simulateTeacherWeek(n, parseInt(wIdx));
+              for (let p = 1; p <= 8; p++) { if (!isCellAvailable(wk, dayChar + p)) dayLoadSum++; }
+            });
+            const dayLoad = uniqueDays.length > 0 ? (dayLoadSum / uniqueDays.length) : 0;
+
             const subN = subCount[n] || 0;
             let score = 0;
-            if (sameClassTeachers.has(n)) score += 3;                                                     // 同班（最懂學生）
+            if (sameClassTeachers.has(n)) score += 3;                                                     // 同班
             if (currentTeacherSubject && ALL_DATA.teacherSubjectMap[n] === currentTeacherSubject) score += 2; // 同科
-            score -= subN * 2;      // 公平輪替：本月已代越多越後面
-            score -= dayLoad * 0.5; // 避開滿堂：當天課越多越後面
+            score -= subN * 2;      // 公平輪替
+            score -= dayLoad * 0.5; // 避開滿堂
             cand.push({ n, subN, dayLoad, score });
           });
-          // 分數高優先；同分則本月代少者優先、再當天課少者優先
           cand.sort((a, b) => (b.score - a.score) || (a.subN - b.subN) || (a.dayLoad - b.dayLoad));
 
+          const displayTime = SELECTED_CELLS.map(c => c.timeKey).join(",");
           listBody.innerHTML = cand.map(c => {
             let tags = "";
             if (sameClassTeachers.has(c.n)) tags += `<span class="badge bg-info ms-1" style="font-size:9px;">同班</span>`;
             if (currentTeacherSubject && ALL_DATA.teacherSubjectMap[c.n] === currentTeacherSubject) tags += `<span class="badge bg-warning text-dark ms-1" style="font-size:9px;">同科</span>`;
             if (c.subN === 0) tags += `<span class="badge bg-success ms-1" style="font-size:9px;">本月未代</span>`;
             const info = `本月已代 ${c.subN}　·　當天 ${c.dayLoad} 節`;
-            return `<tr class="align-middle"><td class="small">${timeK}</td><td><span class="fw-bold text-primary">${c.n}</span>${tags}<br><span class="text-muted" style="font-size:10px;">${info}</span></td><td class="small text-muted">空堂</td><td class="text-end"><button class="btn btn-sm btn-primary py-0 text-nowrap" onclick="prepCompare('sub','${c.n}')">模擬</button></td></tr>`;
+            return `<tr class="align-middle"><td class="small">${displayTime}</td><td><span class="fw-bold text-primary">${c.n}</span>${tags}<br><span class="text-muted" style="font-size:10px;">${info}</span></td><td class="small text-muted">空堂</td><td class="text-end"><button class="btn btn-sm btn-primary py-0 text-nowrap" onclick="prepCompare('sub','${c.n}')">模擬</button></td></tr>`;
           }).join('');
         } else {
+          // 單選調課模式
           let dynamicClassSched = simulateClassWeek(cls, tarWIdx);
           let myTargetWeekSched = simulateTeacherWeek(tName, tarWIdx);
           let resList = [];
@@ -1418,9 +1615,7 @@
                }
             }
           }
-          // 調課 (swap) 的按鈕替換：
           listBody.innerHTML = resList.map(r => 
-            // 🎯 加入 btn-sm 和 text-nowrap
             `<tr><td class="small">${r.time}</td><td>${r.name}</td><td class="small text-muted">${r.sub}</td><td class="text-end"><button class="btn btn-sm btn-primary py-0 text-nowrap" onclick="prepCompare('swap','${r.name}','${r.time}','${r.sub}')">模擬</button></td></tr>`
           ).join('');
         }
@@ -1431,12 +1626,28 @@
     function prepCompare(mode, targetT, tarTime = "", tarSub = "") {
       const curWIdx = parseInt(document.getElementById('weekSelector').value);
       const tarWIdx = parseInt(CURRENT_MATCH_MODE === 'swap' ? document.getElementById('swapWeekSelector').value : curWIdx);
-      const curWeekSchedA = simulateTeacherWeek(CLICKED_DATA.teacher, curWIdx);
-      const subjectA = curWeekSchedA[CLICKED_DATA.timeKey]?.sub || "彈性學習";
-      PENDING_DATA = { mode, leaveTeacher: CLICKED_DATA.teacher, subTeacher: targetT, cls: CLICKED_DATA.cls, subject: subjectA, date: CLICKED_DATA.date, timeKey: CLICKED_DATA.timeKey, note: "" };
+      
+      // 🎯 生成批次申請資料 PENDING_DATA_LIST
+      PENDING_DATA_LIST = SELECTED_CELLS.map(cell => {
+        const cellWeekIdx = (cell.weekIdx !== undefined) ? cell.weekIdx : curWIdx;
+        const cellSched = simulateTeacherWeek(cell.teacher, cellWeekIdx);
+        const sub = cellSched[cell.timeKey]?.sub || "彈性學習";
+        return {
+          mode: mode,
+          leaveTeacher: cell.teacher,
+          subTeacher: targetT,
+          cls: cell.cls,
+          subject: sub,
+          date: cell.date,
+          timeKey: cell.timeKey,
+          note: ""
+        };
+      });
+      // 保持 PENDING_DATA 作為相容性參照 (例如 executeSubmit 會用到其 mode 和 leaveTeacher 等屬性)
+      PENDING_DATA = PENDING_DATA_LIST[0];
+
       const feeSel = document.getElementById('adjFee'); feeSel.innerHTML = "";
       if (mode === 'sub') {
-        // 🎯 鐘點費類別改由後端「系統設定」提供（管理員自訂）；未設定時給預設兩類別
         feeSel.add(new Option("請選擇...", "", true, true));
         feeSel.options[0].disabled = true;
         const cats = (FEE_CATEGORIES && FEE_CATEGORIES.length) ? FEE_CATEGORIES
@@ -1447,30 +1658,69 @@
         });
         document.getElementById('feeArea').style.display = 'block';
       } else { feeSel.add(new Option("不用", "不用")); document.getElementById('feeArea').style.display = 'none'; }
+      
       if (mode === 'swap') {
         const dIdxB = ['一','二','三','四','五'].indexOf(tarTime[0]), dB = WEEK_LIST[tarWIdx].dates[dIdxB];
-        Object.assign(PENDING_DATA, { teacherA: CLICKED_DATA.teacher, teacherB: targetT, dateA: CLICKED_DATA.date, timeA: CLICKED_DATA.timeKey, subA: subjectA, dateB: dB, timeB: tarTime, subB: tarSub });
+        Object.assign(PENDING_DATA_LIST[0], { teacherA: CLICKED_DATA.teacher, teacherB: targetT, dateA: CLICKED_DATA.date, timeA: CLICKED_DATA.timeKey, subA: PENDING_DATA_LIST[0].subject, dateB: dB, timeB: tarTime, subB: tarSub });
+        PENDING_DATA = PENDING_DATA_LIST[0];
         document.getElementById('adjDateBDisplay').value = `${WEEK_LIST[tarWIdx].label} (${dB})`;
         document.getElementById('dateBArea').style.display = 'block';
       } else { document.getElementById('dateBArea').style.display = 'none'; }
+      
       const cleanNameA = CLICKED_DATA.teacher.split(/[&/]/).map(n => n.trim()).join(" & ");
       const cleanNameB = targetT.split(/[&/]/).map(n => n.trim()).join(" & ");
       document.getElementById('tAName').innerText = `👤 ${cleanNameA} (${WEEK_LIST[tarWIdx].label})`;
       document.getElementById('tBName').innerText = `👤 ${cleanNameB} (${WEEK_LIST[curWIdx].label})`;
-      document.getElementById('tAGridMini').innerHTML = generateComparisonMiniHtml(simulateTeacherWeek(CLICKED_DATA.teacher, tarWIdx), CLICKED_DATA.timeKey, PENDING_DATA.timeB, CLICKED_DATA.cls, WEEK_LIST[tarWIdx].dates);
-      document.getElementById('tBGridMini').innerHTML = generateComparisonMiniHtml(simulateTeacherWeek(targetT, curWIdx), PENDING_DATA.timeB, CLICKED_DATA.timeKey, CLICKED_DATA.cls, WEEK_LIST[curWIdx].dates);
+      
+      // 🎯 多選課堂高亮與空堂模擬比對
+      const timeKeys = SELECTED_CELLS.map(c => c.timeKey);
+      const classes = SELECTED_CELLS.map(c => c.cls);
+      
+      document.getElementById('tAGridMini').innerHTML = generateComparisonMiniHtml(
+        simulateTeacherWeek(CLICKED_DATA.teacher, tarWIdx), 
+        timeKeys, 
+        mode === 'swap' ? tarTime : null, 
+        classes, 
+        WEEK_LIST[tarWIdx].dates
+      );
+      document.getElementById('tBGridMini').innerHTML = generateComparisonMiniHtml(
+        simulateTeacherWeek(targetT, curWIdx), 
+        mode === 'swap' ? timeKeys : timeKeys, 
+        mode === 'swap' ? CLICKED_DATA.timeKey : null, 
+        classes, 
+        WEEK_LIST[curWIdx].dates
+      );
+      
       new bootstrap.Modal(document.getElementById('compareModal')).show();
     }
 
     function generateComparisonMiniHtml(s, oldT, newT, cls, hDates) {
       let sc = JSON.parse(JSON.stringify(s)), h = `<tr class="day-header" style="height:35px; font-size:12px;"><th></th>`;
-      delete sc[oldT]; if(newT) sc[newT] = { cls: cls, isNew: true }; 
+      
+      const oldKeys = Array.isArray(oldT) ? oldT : [oldT];
+      oldKeys.forEach(k => { delete sc[k]; });
+      
+      if (newT) {
+        const newKeys = Array.isArray(newT) ? newT : [newT];
+        newKeys.forEach((nk, i) => {
+          const currentCls = Array.isArray(cls) ? cls[i] : cls;
+          sc[nk] = { cls: currentCls, isNew: true };
+        });
+      } else {
+        // 代課模式：在代課老師課表上將所有代課課堂黃底標示
+        oldKeys.forEach((ok, i) => {
+          const currentCls = Array.isArray(cls) ? cls[i] : cls;
+          sc[ok] = { cls: currentCls, isNew: true };
+        });
+      }
+
       ['一','二','三','四','五'].forEach((d, i) => { h += `<th><span style="font-size:9px; font-weight:normal;">${hDates[i]?hDates[i].split('/').slice(1).join('/'):""}</span><br>${d}</th>`; });
       for (let p = 1; p <= 8; p++) {
         let rs = (p === 4) ? 'border-bottom: 2px solid #333 !important;' : '';
         h += `<tr><td class="period-header" style="width:25px; font-size:11px; ${rs}">${p}</td>`;
         ['一','二','三','四','五'].forEach(d => {
-          let it = sc[d+p], v = "", sty = "";
+          let k = d + p;
+          let it = sc[k], v = "", sty = "";
           if (it) {
             if (it.isNew) { v = it.cls || ""; sty = "background-color:#ffff00;border:2px solid #ffc107;font-weight:bold;color:#000;"; }
             else if (it.type === 'sub_out' || it.type === 'swap_out') { v = '異動'; sty = "background-color:#e9ecef;color:#adb5bd;"; }
@@ -1484,35 +1734,54 @@
     }
 
     function executeSubmit() {
-      // 🎯 1. 檢查假別是否有選
       const reasonVal = document.getElementById('adjReason').value;
       if (!reasonVal) {
         alert("⚠️ 請選擇「原因 / 假別」後再提交！");
-        return; // 終止執行，不送出
+        return;
       }
-      PENDING_DATA.reason = reasonVal;
       
-      // 🎯 2. 如果是代課，檢查鐘點費是否有選
+      let feeVal = "";
       if (PENDING_DATA.mode === 'sub') {
-        const feeVal = document.getElementById('adjFee').value;
+        feeVal = document.getElementById('adjFee').value;
         if (!feeVal) {
           alert("⚠️ 請選擇「鐘點費」類別後再提交！");
-          return; // 終止執行，不送出
+          return;
         }
-        PENDING_DATA.subFee = feeVal;
       }
       
-      PENDING_DATA.note = document.getElementById('adjNote').value || ""; 
+      const noteVal = document.getElementById('adjNote').value || ""; 
       
-      showLoading(true, "正在寫入...");
-      api("submit", [PENDING_DATA]).then(res => {
+      // 同步設定到所有待送出的申請資料中
+      PENDING_DATA_LIST.forEach(p => {
+        p.reason = reasonVal;
+        if (p.mode === 'sub') {
+          p.subFee = feeVal;
+        }
+        p.note = noteVal;
+      });
+      
+      showLoading(true, `正在批次寫入 (${PENDING_DATA_LIST.length} 節課)...`);
+      
+      // 🎯 批次提交 Promise.all
+      const promises = PENDING_DATA_LIST.map(p => api("submit", [p]));
+      
+      Promise.all(promises).then(results => {
         showLoading(false);
-        if (res.success) {
+        const failures = results.filter(r => !r.success);
+        if (failures.length === 0) {
           bootstrap.Modal.getInstance(document.getElementById('compareModal')).hide();
-          alert(`申請成功！單號：${res.serial}\n請受邀教師查看 Email 並確認。`);
+          const serials = results.map(r => r.serial).join(", ");
+          alert(`批次申請成功！共 ${results.length} 節課。\n單號：${serials}\n請受邀教師查看 Email 並確認。`);
+          
+          // 🎯 成功後重設選取狀態
+          SELECTED_CELLS = [];
+          CLICKED_DATA = {};
+          
           loadWeeklySchedule();
         } else {
-          alert("失敗: " + res.error);
+          const errors = failures.map(f => f.error).join("; ");
+          alert("部分申請失敗: " + errors);
+          loadWeeklySchedule();
         }
       }).catch(err => { showLoading(false); alert("失敗: " + err.message); });
     }
@@ -1573,7 +1842,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.07.09-2';   // 與 sw.js 同步
+    var APP_VERSION='2026.07.09-3';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;
