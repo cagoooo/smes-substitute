@@ -10,9 +10,9 @@ const CONFIG = {
   // 也可在「專案設定 → 指令碼屬性」設 ALLOWED_DOMAINS 覆寫。
   ALLOWED_DOMAINS: PropertiesService.getScriptProperties().getProperty("ALLOWED_DOMAINS") || "",
   // 🤝 特許協助名冊：跨校/非石門網域的協助帳號，登入時自動補進「Email對照表」並繞過網域檢查
-  //    （仍受名單校核；格式同名冊：[姓名, 信箱, 身分]）。
+  //    （仍受名單校核；格式同名冊：[姓名, 信箱, 身分]）。姓名/身分變更時登入會自動對齊。
   EXTRA_ROSTER: [
-    ["陳芳珊", "b002@mail2.chshs.ntpc.edu.tw", "教師"]
+    ["詩穎老師", "b002@mail2.chshs.ntpc.edu.tw", "管理員"]  // 新北中和高中教學組長，共作測試
   ],
   // 🌐 GitHub Pages 前端網址（老師實際使用的介面；信件連結也指向這裡）
   FRONTEND_URL: PropertiesService.getScriptProperties().getProperty("FRONTEND_URL") || "https://cagoooo.github.io/smes-substitute/",
@@ -1355,15 +1355,26 @@ function ensureExtraRoster_(email) {
   var s = ss.getSheetByName(CONFIG.sheetEmail);
   if (!s) return;
   var data = s.getDataRange().getDisplayValues();
-  var have = {};
-  for (var i = 1; i < data.length; i++) have[String(data[i][1]).toLowerCase()] = true;
-  var toAdd = extra.filter(function (r) { return !have[String(r[1]).toLowerCase()]; });
-  if (!toAdd.length) return;
+  var rowByEmail = {};
+  for (var i = 1; i < data.length; i++) {
+    rowByEmail[String(data[i][1]).toLowerCase()] = { row: i + 1, name: data[i][0], role: data[i][2] };
+  }
   var lock = LockService.getScriptLock();
+  var changed = false;
   try {
     lock.waitLock(15000);
-    toAdd.forEach(function (r) { s.appendRow([r[0], r[1], r[2]]); });
-    CacheService.getScriptCache().remove("smes_sub_cache_" + CONFIG.sheetEmail);
+    extra.forEach(function (r) {
+      var cur = rowByEmail[String(r[1]).toLowerCase()];
+      if (!cur) {
+        s.appendRow([r[0], r[1], r[2]]);          // 不存在 → 補列
+        changed = true;
+      } else if (String(cur.name) !== String(r[0]) || String(cur.role) !== String(r[2])) {
+        s.getRange(cur.row, 1).setValue(r[0]);      // 存在但姓名/身分不符 → 對齊（例如改綁不同人或改權限）
+        s.getRange(cur.row, 3).setValue(r[2]);
+        changed = true;
+      }
+    });
+    if (changed) CacheService.getScriptCache().remove("smes_sub_cache_" + CONFIG.sheetEmail);
   } finally {
     lock.releaseLock();
   }
