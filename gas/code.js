@@ -493,6 +493,9 @@ function getSystemInitDataFor_(email, opts) {
   // ✅ 成功通知：偵測到「首次登入」的新使用者才推播（避免每次登入洗版）
   if (!opts.silent) maybeNotifyNewUser_(user);
 
+  // ✅ 登入使用通知（使用 CacheService 避免 30 分鐘內重複通知洗版）
+  if (!opts.silent) maybeNotifyUserLogin_(user);
+
   // --- 原有的週次與資料抓取邏輯 (保持不變) ---
   const timezone = ss.getSpreadsheetTimeZone();
 let checkDate = new Date();
@@ -1232,6 +1235,31 @@ function maybeNotifyNewUser_(user) {
       { label: "時間", text: nowStr_() }
     ], "🎉 有新使用者成功註冊並開始使用調代課系統。");
   } catch (e) { console.log(e.message); }
+}
+
+/** 成功登入系統的通知，使用 CacheService 進行 30 分鐘去重防洗版 */
+function maybeNotifyUserLogin_(user) {
+  try {
+    const email = user.email.toLowerCase();
+    const cache = CacheService.getScriptCache();
+    const cacheKey = "login_notify_" + email.replace(/[^a-zA-Z0-9]/g, "_");
+    
+    // 30 分鐘內若已發送過，則不再重複發送
+    if (cache.get(cacheKey)) {
+      return;
+    }
+    
+    cache.put(cacheKey, "1", 1800); // 快取 30 分鐘 (1800 秒)
+    
+    pushChatCard_("info", "老師登入使用系統", [
+      { label: "姓名", text: user.name },
+      { label: "身分", text: user.role },
+      { label: "帳號", text: email },
+      { label: "時間", text: nowStr_() }
+    ], "👤 老師已進入系統，開始使用調代課系統。");
+  } catch (e) {
+    console.log("登入通知失敗：" + e.message);
+  }
 }
 
 /** 有帳號嘗試登入但無權限（網域不符／不在名單）→ 推播一次（去重，方便管理員決定是否加入名單） */
