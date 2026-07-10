@@ -859,23 +859,30 @@
       try {
         info = await api("confirmInfo", [serial, token]);
       } catch (err) {
-        body.innerHTML = `<h5 class="text-danger">❌ ${err.message}</h5>`;
+        body.innerHTML = `<h5 class="text-danger">❌ ${err.message}</h5>
+          <button class="btn btn-outline-secondary w-100 fw-bold mt-3" style="border-radius:10px; padding:12px;" onclick="location.href=location.origin+location.pathname">🔗 進入系統首頁</button>`;
         return;
       }
-      if (info.error) { body.innerHTML = `<h5 class="text-danger">❌ ${info.error}</h5>`; return; }
+      if (info.error) {
+        body.innerHTML = `<h5 class="text-danger">❌ ${info.error}</h5>
+          <button class="btn btn-outline-secondary w-100 fw-bold mt-3" style="border-radius:10px; padding:12px;" onclick="location.href=location.origin+location.pathname">🔗 進入系統首頁</button>`;
+        return;
+      }
       if (!info.isInvited) {
         body.innerHTML = `
           <div style="font-size:48px;">🚫</div>
           <h5 class="fw-bold">權限不足</h5>
           <p class="text-muted small">您登入的帳號不是此單據（${serial}）的受邀教師。<br>請改用受邀教師（${info.invitedTeacherName}）的 Google 帳號登入。</p>
-          <button class="btn btn-primary" onclick="location.reload()">重新登入</button>`;
+          <button class="btn btn-primary w-100 fw-bold" style="border-radius:10px; padding:12px;" onclick="location.reload()">重新登入</button>
+          <button class="btn btn-outline-secondary w-100 fw-bold mt-2" style="border-radius:10px; padding:12px;" onclick="location.href=location.origin+location.pathname">🔗 進入系統首頁</button>`;
         return;
       }
       if (!info.pending) {
         body.innerHTML = `
+          <div style="font-size:52px; margin-bottom:12px;">ℹ️</div>
           <h5 class="fw-bold">單據 ${serial} 已處理</h5>
           <p class="text-muted">目前的狀態為：<b>${info.status}</b></p>
-          <p class="text-muted small">您可以直接關閉此視窗。</p>`;
+          <button class="btn btn-outline-secondary w-100 fw-bold mt-2" style="border-radius:10px; padding:12px;" onclick="location.href=location.origin+location.pathname">🔗 進入系統首頁</button>`;
         return;
       }
 
@@ -895,42 +902,49 @@
             <div><span style="color:#1e40af; font-weight:bold;">[對方的課節]</span><br>${info.info.theirs.date} (${info.info.theirs.time}) - ${info.info.theirs.subject}</div>
           </div>`;
       }
-       const isAccept = (action === "accept");
-       const btnColor = isAccept ? "#22c55e" : "#ef4444";
-       const cardEl = document.getElementById("confirmCard");
-       if (cardEl) {
-         cardEl.style.borderColor = btnColor;
-       }
-       
-       const btnText = isAccept ? "確定同意並執行" : "確定拒絕此申請";
-       const titleStatus = isAccept 
-         ? `<div style="font-size:22px; font-weight:bold; color:#22c55e; margin-bottom:16px;">🟢 同意並確認此申請</div>`
-         : `<div style="font-size:22px; font-weight:bold; color:#ef4444; margin-bottom:16px;">🔴 拒絕此申請</div>`;
- 
-       body.innerHTML = `
-         <h5 class="fw-bold" style="color:#1e293b; margin-top:10px;">📅 調代課確認</h5>
-         <p class="text-muted small">單號：<b>${serial}</b></p>
-         ${titleStatus}
-         <div class="mb-3">${infoHtml}</div>
-         <button class="btn w-100 fw-bold text-white shadow-sm" style="background:${btnColor}; padding:14px; border-radius:10px;" id="confirmBtn">${btnText}</button>`;
-         
-       document.getElementById('confirmBtn').onclick = async function () {
-         this.disabled = true;
-         this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>處理中...';
-         try {
-           const r = await api("confirm", [action, serial, token]);
-           if (r.success) {
-             body.innerHTML = isAccept
-               ? `<div style="font-size:52px; margin-bottom:12px;">✅</div><h4 style="color:#22c55e; font-weight:bold;">同意已確認</h4><p class="text-muted">您已成功「同意」此代課申請。<br>系統已發信通知相關人員，您可以直接關閉此視窗。</p>`
-               : `<div style="font-size:52px; margin-bottom:12px;">ℹ️</div><h4 style="color:#ef4444; font-weight:bold;">拒絕已確認</h4><p class="text-muted">您已「拒絕」此代課申請。<br>系統已發信通知相關人員，您可以直接關閉此視窗。</p>`;
-           } else {
-             body.innerHTML = `<div style="font-size:52px; margin-bottom:12px;">⚠️</div><h4 class="text-danger">❌ 處理失敗</h4><p class="text-muted">${r.error}</p>`;
-           }
-         } catch (err) {
-           body.innerHTML = `<div style="font-size:52px; margin-bottom:12px;">⚠️</div><h4 class="text-danger">❌ 處理失敗</h4><p class="text-muted">${err.message}</p>`;
-         }
-       };
-     }
+      
+      const isAccept = (action === "accept");
+      const statusColor = isAccept ? "#22c55e" : "#ef4444";
+      const cardEl = document.getElementById("confirmCard");
+      if (cardEl) {
+        cardEl.style.borderColor = statusColor;
+      }
+
+      body.innerHTML = `
+        <h5 class="fw-bold" style="color:#1e293b; margin-top:10px;">📅 調代課確認</h5>
+        <p class="text-muted small">單號：<b>${serial}</b></p>
+        <div class="d-flex flex-column align-items-center my-4">
+          <div class="spinner-border text-primary" role="status" style="width:3rem; height:3rem;"></div>
+          <span class="mt-3 text-dark fw-bold">正在自動為您提交「${isAccept ? "同意" : "拒絕"}」確認...</span>
+        </div>
+        <div class="mb-3">${infoHtml}</div>
+      `;
+
+      try {
+        const r = await api("confirm", [action, serial, token]);
+        if (r.success) {
+          body.innerHTML = isAccept
+            ? `<div style="font-size:52px; margin-bottom:12px;">✅</div>
+               <h4 style="color:#22c55e; font-weight:bold;">同意已確認</h4>
+               <p class="text-muted">您已成功「同意」此代課申請。<br>系統已發信通知相關人員。</p>
+               <button class="btn btn-outline-secondary w-100 fw-bold mt-2" style="border-radius:10px; padding:12px;" onclick="location.href=location.origin+location.pathname">🔗 進入系統首頁</button>`
+            : `<div style="font-size:52px; margin-bottom:12px;">ℹ️</div>
+               <h4 style="color:#ef4444; font-weight:bold;">拒絕已確認</h4>
+               <p class="text-muted">您已「拒絕」此代課申請。<br>系統已發信通知相關人員。</p>
+               <button class="btn btn-outline-secondary w-100 fw-bold mt-2" style="border-radius:10px; padding:12px;" onclick="location.href=location.origin+location.pathname">🔗 進入系統首頁</button>`;
+        } else {
+          body.innerHTML = `<div style="font-size:52px; margin-bottom:12px;">⚠️</div>
+            <h4 class="text-danger">❌ 處理失敗</h4>
+            <p class="text-muted">${r.error}</p>
+            <button class="btn btn-outline-secondary w-100 fw-bold mt-2" style="border-radius:10px; padding:12px;" onclick="location.href=location.origin+location.pathname">🔗 進入系統首頁</button>`;
+        }
+      } catch (err) {
+        body.innerHTML = `<div style="font-size:52px; margin-bottom:12px;">⚠️</div>
+          <h4 class="text-danger">❌ 處理失敗</h4>
+          <p class="text-muted">${err.message}</p>
+          <button class="btn btn-outline-secondary w-100 fw-bold mt-2" style="border-radius:10px; padding:12px;" onclick="location.href=location.origin+location.pathname">🔗 進入系統首頁</button>`;
+      }
+    }
 
     function renderAccessDenied(res) {
       const appUrl = location.origin + location.pathname; // 取得系統網址

@@ -1149,6 +1149,11 @@ function pushChatCard_(status, title, rows, note) {
   });
   if (note) widgets.push({ textParagraph: { text: note } });
   
+  // 🔗 一律加上「前往系統」按鈕
+  widgets.push({ buttonList: { buttons: [
+    { text: "🔗 前往系統", onClick: { openLink: { url: CONFIG.FRONTEND_URL } } }
+  ] } });
+  
   // P0-1: 組合手機端推播通知的 fallback 預覽文字 text
   let fallbackText = icon + " " + title;
   if (rows && rows.length > 0) {
@@ -1197,12 +1202,13 @@ function notifyTeacherChatInvite_(data, serial, opts) {
     { decoratedText: { topLabel: "班級科目", text: clsSub, wrapText: true } },
     { decoratedText: { topLabel: "單號", text: serial } }
   ];
+  var buttons = [];
   if (pending) {
-    widgets.push({ buttonList: { buttons: [
-      { text: "✅ 我同意", onClick: { openLink: { url: CONFIG.FRONTEND_URL + "?action=accept&serial=" + serial + "&token=" + CONFIG.TOKEN } } },
-      { text: "❌ 有困難", onClick: { openLink: { url: CONFIG.FRONTEND_URL + "?action=decline&serial=" + serial + "&token=" + CONFIG.TOKEN } } }
-    ] } });
+    buttons.push({ text: "✅ 我同意", onClick: { openLink: { url: CONFIG.FRONTEND_URL + "?action=accept&serial=" + serial + "&token=" + CONFIG.TOKEN } } });
+    buttons.push({ text: "❌ 有困難", onClick: { openLink: { url: CONFIG.FRONTEND_URL + "?action=decline&serial=" + serial + "&token=" + CONFIG.TOKEN } } });
   }
+  buttons.push({ text: "🔗 前往系統", onClick: { openLink: { url: CONFIG.FRONTEND_URL } } });
+  widgets.push({ buttonList: { buttons: buttons } });
   var payload = {
     text: fallback,
     cardsV2: [{ cardId: "inv-" + serial, card: {
