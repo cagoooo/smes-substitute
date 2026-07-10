@@ -9,6 +9,11 @@ const CONFIG = {
   // 允許登入的網域（逗號分隔）。留空字串 = 不限制網域（只靠 Email 對照表名單管控）。
   // 也可在「專案設定 → 指令碼屬性」設 ALLOWED_DOMAINS 覆寫。
   ALLOWED_DOMAINS: PropertiesService.getScriptProperties().getProperty("ALLOWED_DOMAINS") || "",
+  // 🤝 特許協助名冊：跨校/非石門網域的協助帳號，登入時自動補進「Email對照表」並繞過網域檢查
+  //    （仍受名單校核；格式同名冊：[姓名, 信箱, 身分]）。
+  EXTRA_ROSTER: [
+    ["陳芳珊", "b002@mail2.chshs.ntpc.edu.tw", "教師"]
+  ],
   // 🌐 GitHub Pages 前端網址（老師實際使用的介面；信件連結也指向這裡）
   FRONTEND_URL: PropertiesService.getScriptProperties().getProperty("FRONTEND_URL") || "https://cagoooo.github.io/smes-substitute/",
   // 🔑 Google 登入 OAuth Client ID（設定後會嚴格驗證 id_token 的 aud；未設定時僅驗 email）
@@ -442,11 +447,14 @@ function getSystemInitDataFor_(email, opts) {
   opts = opts || {};
   const ss = SpreadsheetApp.getActiveSpreadsheet();
 
+  // 0. 特許協助帳號自癒：若此信箱屬 EXTRA_ROSTER 且尚未在名冊，自動補列（只有特許信箱登入才會觸發）
+  ensureExtraRoster_(email);
+
   // 1. 網域檢查（CONFIG.ALLOWED_DOMAINS 有設定才啟用；多網域用逗號分隔）
   if (CONFIG.ALLOWED_DOMAINS) {
     const allowList = CONFIG.ALLOWED_DOMAINS.split(",").map(d => d.trim().toLowerCase()).filter(d => d);
     const userDomain = email.includes("@") ? email.split("@").pop().toLowerCase() : "";
-    if (allowList.length > 0 && !allowList.includes(userDomain)) {
+    if (allowList.length > 0 && !allowList.includes(userDomain) && extraAllowedEmails_().indexOf(email.toLowerCase()) === -1) {
       if (!opts.silent) maybeNotifyDenied_(email, "網域不符（非學校帳號）");
       return {
         error: "DOMAIN_WRONG",
@@ -1327,6 +1335,39 @@ const CacheHelper_ = {
     }
   }
 };
+
+/**
+ * 🤝 取得特許協助信箱清單（小寫），供網域檢查繞過使用。
+ */
+function extraAllowedEmails_() {
+  return (CONFIG.EXTRA_ROSTER || []).map(function (r) { return String(r[1]).toLowerCase(); });
+}
+
+/**
+ * 🤝 自癒補名冊：若登入者屬 EXTRA_ROSTER 且尚未在「Email對照表」，自動補上該列並清快取。
+ *    只有特許信箱本人登入時才實際讀表/寫入，一般教師零負擔；idempotent（已存在則不動）。
+ */
+function ensureExtraRoster_(email) {
+  var lower = String(email || "").toLowerCase();
+  var extra = (CONFIG.EXTRA_ROSTER || []).filter(function (r) { return String(r[1]).toLowerCase() === lower; });
+  if (!extra.length) return;
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var s = ss.getSheetByName(CONFIG.sheetEmail);
+  if (!s) return;
+  var data = s.getDataRange().getDisplayValues();
+  var have = {};
+  for (var i = 1; i < data.length; i++) have[String(data[i][1]).toLowerCase()] = true;
+  var toAdd = extra.filter(function (r) { return !have[String(r[1]).toLowerCase()]; });
+  if (!toAdd.length) return;
+  var lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(15000);
+    toAdd.forEach(function (r) { s.appendRow([r[0], r[1], r[2]]); });
+    CacheService.getScriptCache().remove("smes_sub_cache_" + CONFIG.sheetEmail);
+  } finally {
+    lock.releaseLock();
+  }
+}
 
 /**
  * 🔎 讀取或載入 Email 對照表快取資料 (P0-2)
