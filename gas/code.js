@@ -1243,19 +1243,20 @@ function maybeNotifyNewUser_(user) {
   } catch (e) { console.log(e.message); }
 }
 
-/** 成功登入系統的通知，使用 CacheService 進行 30 分鐘去重防洗版 */
+/** 成功登入系統的通知，使用 CacheService 進行 10 分鐘去重防洗版 (GAS 限制上限為 600 秒) */
 function maybeNotifyUserLogin_(user) {
   try {
     const email = user.email.toLowerCase();
     const cache = CacheService.getScriptCache();
     const cacheKey = "login_notify_" + email.replace(/[^a-zA-Z0-9]/g, "_");
     
-    // 30 分鐘內若已發送過，則不再重複發送
+    // 10 分鐘內若已發送過，則不再重複發送
     if (cache.get(cacheKey)) {
       return;
     }
     
-    cache.put(cacheKey, "1", 1800); // 快取 30 分鐘 (1800 秒)
+    // 💡 鐵律：GAS CacheService.put 的最大有效時間為 600 秒 (10 分鐘)，超限會拋出異常中斷
+    cache.put(cacheKey, "1", 600);
     
     pushChatCard_("info", "老師登入使用系統", [
       { label: "姓名", text: user.name },
