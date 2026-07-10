@@ -36,6 +36,11 @@ const CONFIG = {
   TOKEN: PropertiesService.getScriptProperties().getProperty("APP_TOKEN") || "DEMO_TEMPLATE_TOKEN" // 建議隨機設定，用於連結安全驗證
 };
 
+// 🌐 防禦性校正前端 URL，防止相對路徑或空值導致 Google Chat Webhook 400 拒收
+if (!CONFIG.FRONTEND_URL || !CONFIG.FRONTEND_URL.startsWith("http")) {
+  CONFIG.FRONTEND_URL = "https://cagoooo.github.io/smes-substitute/";
+}
+
 /**
  * 🎯 整理後的後端確認流程 (僅保留必要部分)
  */
@@ -1248,7 +1253,7 @@ function maybeNotifyUserLogin_(user) {
   try {
     const email = user.email.toLowerCase();
     const cache = CacheService.getScriptCache();
-    const cacheKey = "login_notify_" + email.replace(/[^a-zA-Z0-9]/g, "_");
+    const cacheKey = "login_notify_v2_" + email.replace(/[^a-zA-Z0-9]/g, "_");
     
     // 1 分鐘內若已發送過，則不再重複發送
     if (cache.get(cacheKey)) {
