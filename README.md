@@ -72,6 +72,7 @@ clasp update-deployment <deploymentId> -V <版本號> -d "更新說明"
 
 ## 📅 更新日誌與開發進度表
 
+- **`[x]` (2026.07.10-2 · 前端)**：**強化 App 內建瀏覽器逃脫（參考 skill `inapp-browser-oauth-escape`）**。原本 LINE 自動跳、其餘只顯示手動引導；本次升級為「能自動跳就自動跳」：Kakao 走官方 `kakaotalk://web/openExternal` scheme、**Android 上 FB／IG／Messenger／微信改用 `intent://` 嘗試自動開 Chrome**（帶 `extEsc=1`/`kkEsc=1` 防迴圈），iOS 或自動跳失敗才顯示全版引導，並補「加入主畫面最穩」提示。以樣本 UA 驗證 LINE/Kakao/FB/IG 偵測正確、`Baseline` 不誤判、正常瀏覽器零影響。
 - **`[x]` (2026.07.10 · 後端 GAS @51)**：**特許協助帳號改為「詩穎老師（新北中和高中教學組長）管理員」共作測試**。將 `b002@mail2.chshs.ntpc.edu.tw` 由原「陳芳珊 教師」改綁為「詩穎老師 管理員」，供跨校協作測試（石門陳芳珊本人的 `asun@mail2` 名冊列不受影響、保留）。同步升級 `ensureExtraRoster_`：由「不存在才補」→「不存在則補、**已存在但姓名/身分不符則自動對齊**」，故改綁不同人或調整權限只要改 `CONFIG.EXTRA_ROSTER` 重新部署，登入即生效。
 - **`[x]` (2026.07.10 · 後端 GAS @50)**：**新增「特許協助名冊」機制**（跨校/非石門網域協助帳號自動補進「Email對照表」並繞過網域檢查）。於 `CONFIG.EXTRA_ROSTER` 定義協助名冊，登入時 `ensureExtraRoster_` 自動補列（idempotent、只有特許信箱本人登入才讀寫、含 LockService＋清快取），並在網域檢查加白名單繞過（`extraAllowedEmails_`）。純後端 clasp 部署即生效，不需手動編輯試算表。⚠️ 若未來重新「課表匯入／重建名單」清空名冊，協助帳號會在其下次登入時自動補回。
 - **`[x]` (2026.07.09-10)**：**實作 P0 級後端二次權限防線、寫入並行鎖與前端靜默 Token 刷新**。後端 `processAdjustmentFor_` 限制非管理員/行政僅能幫自己提交調代課，`getConfirmInfo_` 限制只有關係人能讀取單據；在所有資料寫入 API（提交、匯入、更新名單）引入 `LockService` 解決並發寫入衝突；前端 `api` 支援 `UNAUTHENTICATED` 時透過 One Tap 靜默自癒重新驗證並自動重試請求。配套執行 `bump-version.ps1` 升版快取並以 clasp 部署 v48 上線。
