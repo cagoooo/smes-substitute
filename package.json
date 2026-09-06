@@ -1,5 +1,6 @@
 {
   "name": "smes-substitute-tools",
+  "version": "1.0.0",
   "private": true,
   "type": "module",
   "description": "石門國小調代課系統 圖示/OG 圖生成工具（僅開發用）",
