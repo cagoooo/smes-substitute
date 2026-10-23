@@ -18,8 +18,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.10-2">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.07.10-2">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.10.23-1">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.10.23-1">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -31,7 +31,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="og-preview.png?v=2026.07.10-2">
+  <meta name="og-preview.png?v=2026.10.23-1">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
@@ -214,6 +214,32 @@
       >阿凱老師</a>
       <span class="site-credit__origin">｜原創：<a href="https://docs.google.com/spreadsheets/d/15xY1bGLeNaMg_t4GOjeDNje_R2goZI5uMKVMHnofFOA/copy" target="_blank" rel="noopener noreferrer" class="site-credit__author">新北市中和高中教學組 詩穎老師 線上調代課系統</a></span>
     </footer>
+
+    <!-- 💬 聯絡阿凱老師／回饋（僅登入頁顯示，給他校老師洽談導入） -->
+    <div id="contactDock" class="contact-dock">
+      <div id="contactPanel" class="contact-panel" role="dialog" aria-labelledby="contactPanelTitle" aria-hidden="true">
+        <button type="button" class="contact-panel__close" onclick="toggleContactPanel(false)" aria-label="關閉">✕</button>
+        <div class="contact-panel__head">
+          <div class="contact-panel__emoji">👋</div>
+          <div>
+            <div id="contactPanelTitle" class="contact-panel__title">與阿凱老師聯絡</div>
+            <div class="contact-panel__sub">合作洽談・使用回饋・功能許願</div>
+          </div>
+        </div>
+        <div class="contact-panel__notice">
+          <b>🏫 他校／外縣市老師也想使用嗎？</b><br>
+          本系統目前<b>僅開放石門國小校內 Google 帳號</b>登入。若貴校也想導入線上調代課系統，歡迎留言給阿凱老師，一起洽談協助建置的方式！
+        </div>
+        <div class="contact-panel__tip">
+          📝 留言時請附上：<b>縣市＋學校名稱</b>、<b>您的稱呼與聯絡 Email</b>、<b>想解決的需求</b>，方便阿凱老師回覆您。
+        </div>
+        <a class="contact-panel__btn contact-panel__btn--primary" href="https://cagoooo.github.io/Akai/wish/" target="_blank" rel="noopener noreferrer">✨ 前往許願池留言／回饋</a>
+        <a class="contact-panel__btn contact-panel__btn--ghost" href="https://www.smes.tyc.edu.tw/modules/school/index.php?department_id=2&zone_id=0&page_id=2&content_id=11&type=news&from_op=all_news#a5" target="_blank" rel="noopener noreferrer">👨‍🏫 阿凱老師教師頁</a>
+      </div>
+      <button type="button" id="contactFab" class="contact-fab" onclick="toggleContactPanel()" aria-expanded="false" aria-controls="contactPanel">
+        <span class="contact-fab__icon">💬</span><span class="contact-fab__text">聯絡阿凱老師</span>
+      </button>
+    </div>
   </div>
 
   <!-- 📨 信件確認模式卡片 -->
@@ -430,6 +456,35 @@
     <span class="site-credit__origin">｜原創：<a href="https://docs.google.com/spreadsheets/d/15xY1bGLeNaMg_t4GOjeDNje_R2goZI5uMKVMHnofFOA/copy" target="_blank" rel="noopener noreferrer" class="site-credit__author">新北市中和高中教學組 詩穎老師 線上調代課系統</a></span>
   </footer>
   <style>
+    /* 💬 登入頁右下角：聯絡阿凱老師／回饋 */
+    .contact-dock { position: absolute; right: 20px; bottom: 64px; z-index: 2; display: flex; flex-direction: column; align-items: flex-end; gap: 12px; font-family: system-ui, -apple-system, "Microsoft JhengHei", sans-serif; }
+    .contact-fab { display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer; padding: 12px 18px; border-radius: 999px; color: #fff; font-weight: 700; font-size: 15px; background: linear-gradient(135deg, #f59e0b, #ea580c); box-shadow: 0 10px 24px -8px rgba(234, 88, 12, .6); transition: transform .2s ease, box-shadow .2s ease; animation: contactFabIn .5s ease .6s both; }
+    .contact-fab:hover { transform: translateY(-2px); box-shadow: 0 14px 28px -8px rgba(234, 88, 12, .7); }
+    .contact-fab:focus-visible { outline: 3px solid #fdba74; outline-offset: 3px; }
+    .contact-fab__icon { font-size: 18px; line-height: 1; }
+    .contact-panel { width: min(340px, calc(100vw - 32px)); background: #fff; border-radius: 16px; padding: 18px 18px 16px; box-shadow: 0 20px 40px -12px rgba(15, 23, 42, .35); border: 1px solid #fde2c4; position: relative; text-align: left; color: #334155; font-size: 14px; line-height: 1.65;
+      opacity: 0; visibility: hidden; transform: translateY(10px) scale(.97); transform-origin: bottom right; transition: opacity .22s ease, transform .22s ease, visibility .22s; }
+    .contact-dock.open .contact-panel { opacity: 1; visibility: visible; transform: none; }
+    .contact-panel__close { position: absolute; top: 8px; right: 10px; border: none; background: transparent; color: #94a3b8; font-size: 16px; cursor: pointer; padding: 4px 6px; border-radius: 8px; }
+    .contact-panel__close:hover { background: #f1f5f9; color: #475569; }
+    .contact-panel__head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding-right: 20px; }
+    .contact-panel__emoji { font-size: 30px; line-height: 1; }
+    .contact-panel__title { font-weight: 800; font-size: 17px; color: #1e293b; }
+    .contact-panel__sub { font-size: 12.5px; color: #94a3b8; }
+    .contact-panel__notice { background: #fff7ed; border-left: 4px solid #f59e0b; border-radius: 10px; padding: 10px 12px; margin-bottom: 10px; }
+    .contact-panel__tip { font-size: 13px; color: #64748b; margin-bottom: 12px; }
+    .contact-panel__btn { display: block; text-align: center; text-decoration: none; font-weight: 700; border-radius: 12px; padding: 10px 12px; margin-top: 8px; transition: filter .15s ease, background .15s ease; }
+    .contact-panel__btn--primary { color: #fff; background: linear-gradient(135deg, #f59e0b, #ea580c); }
+    .contact-panel__btn--primary:hover { color: #fff; filter: brightness(1.06); }
+    .contact-panel__btn--ghost { color: #c2410c; background: #fff; border: 1.5px solid #fdba74; }
+    .contact-panel__btn--ghost:hover { color: #9a3412; background: #fff7ed; }
+    @keyframes contactFabIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+    @media (max-width: 576px) {
+      .contact-dock { right: 14px; bottom: 84px; }
+      .contact-fab { padding: 11px 15px; font-size: 14px; }
+    }
+    @media (prefers-reduced-motion: reduce) { .contact-fab, .contact-panel { animation: none; transition: none; } }
+
     .site-credit {
       text-align: center;
       padding: 24px 16px;
@@ -2039,7 +2094,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.07.10-2';   // 與 sw.js 同步
+    var APP_VERSION='2026.10.23-1';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;
@@ -2859,6 +2914,22 @@
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }
+  </script>
+  <script>
+  // 💬 登入頁「聯絡阿凱老師」面板開關（點外面或按 Esc 關閉）
+  function toggleContactPanel(force) {
+    var dock = document.getElementById('contactDock');
+    if (!dock) return;
+    var open = typeof force === 'boolean' ? force : !dock.classList.contains('open');
+    dock.classList.toggle('open', open);
+    document.getElementById('contactFab').setAttribute('aria-expanded', open ? 'true' : 'false');
+    document.getElementById('contactPanel').setAttribute('aria-hidden', open ? 'false' : 'true');
+  }
+  document.addEventListener('click', function (e) {
+    var dock = document.getElementById('contactDock');
+    if (dock && dock.classList.contains('open') && !dock.contains(e.target)) toggleContactPanel(false);
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') toggleContactPanel(false); });
   </script>
 </body>
 </html>

@@ -74,6 +74,7 @@ clasp update-deployment <deploymentId> -V <版本號> -d "更新說明"
 
 ## 📅 更新日誌與開發進度表
 
+- **`[x]` (2026.10.23-1 · 前端)**：**登入頁右下角新增「💬 聯絡阿凱老師」浮動按鈕**。許多他校／外縣市老師想使用本系統，但 Google 登入僅限石門校內帳號；點按鈕展開說明面板，引導有導入需求的老師前往 [阿凱老師許願池](https://cagoooo.github.io/Akai/wish/) 留言（提示附上縣市學校、聯絡 Email、需求），另附阿凱老師教師頁。點外面或按 Esc 關閉、手機版自動上移避開頁尾、登入後隨登入層一起隱藏。同步把 index／guide／checklist／README／gas 頁尾的**已廢止舊教師頁網址**全部換成新網址。
 - **`[x]` (2026.07.10-2 · 前端)**：**強化 App 內建瀏覽器逃脫（參考 skill `inapp-browser-oauth-escape`）**。原本 LINE 自動跳、其餘只顯示手動引導；本次升級為「能自動跳就自動跳」：Kakao 走官方 `kakaotalk://web/openExternal` scheme、**Android 上 FB／IG／Messenger／微信改用 `intent://` 嘗試自動開 Chrome**（帶 `extEsc=1`/`kkEsc=1` 防迴圈），iOS 或自動跳失敗才顯示全版引導，並補「加入主畫面最穩」提示。以樣本 UA 驗證 LINE/Kakao/FB/IG 偵測正確、`Baseline` 不誤判、正常瀏覽器零影響。
 - **`[x]` (2026.07.10 · 後端 GAS @51)**：**特許協助帳號改為「詩穎老師（新北中和高中教學組長）管理員」共作測試**。將 `b002@mail2.chshs.ntpc.edu.tw` 由原「陳芳珊 教師」改綁為「詩穎老師 管理員」，供跨校協作測試（石門陳芳珊本人的 `asun@mail2` 名冊列不受影響、保留）。同步升級 `ensureExtraRoster_`：由「不存在才補」→「不存在則補、**已存在但姓名/身分不符則自動對齊**」，故改綁不同人或調整權限只要改 `CONFIG.EXTRA_ROSTER` 重新部署，登入即生效。
 - **`[x]` (2026.07.10 · 後端 GAS @50)**：**新增「特許協助名冊」機制**（跨校/非石門網域協助帳號自動補進「Email對照表」並繞過網域檢查）。於 `CONFIG.EXTRA_ROSTER` 定義協助名冊，登入時 `ensureExtraRoster_` 自動補列（idempotent、只有特許信箱本人登入才讀寫、含 LockService＋清快取），並在網域檢查加白名單繞過（`extraAllowedEmails_`）。純後端 clasp 部署即生效，不需手動編輯試算表。⚠️ 若未來重新「課表匯入／重建名單」清空名冊，協助帳號會在其下次登入時自動補回。
