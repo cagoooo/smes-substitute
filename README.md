@@ -74,6 +74,7 @@ clasp update-deployment <deploymentId> -V <版本號> -d "更新說明"
 
 ## 📅 更新日誌與開發進度表
 
+- **`[x]` (2026.11.18-1 · 前端)**：App 內建瀏覽器防護升級為標準版（LINE 自動跳外部瀏覽器、Android 臉書／IG／Messenger 先畫引導再用 intent:// 自動開 Chrome 且每分頁只試一次、沒裝 Chrome 帶 iabEscape=1 回來不再跳、附「用 Chrome 開啟」按鈕；iPhone 僅引導），並移除舊版邏輯。
 - **`[x]` (2026.11.17-1 · 前端)**：頁尾署名改連阿凱老師教育科技創新專區（升版讓離線快取更新）。
 - **`[x]` (2026.10.23-1 · 前端)**：**登入頁右下角新增「💬 聯絡阿凱老師」浮動按鈕**。許多他校／外縣市老師想使用本系統，但 Google 登入僅限石門校內帳號；點按鈕展開說明面板，引導有導入需求的老師前往 [阿凱老師許願池](https://cagoooo.github.io/Akai/wish/) 留言（提示附上縣市學校、聯絡 Email、需求），另附阿凱老師教育科技創新專區。點外面或按 Esc 關閉、手機版自動上移避開頁尾、登入後隨登入層一起隱藏。同步把 index／guide／checklist／README／gas 頁尾的**已廢止舊教師頁網址**全部換成新網址。
 - **`[x]` (2026.07.10-2 · 前端)**：**強化 App 內建瀏覽器逃脫（參考 skill `inapp-browser-oauth-escape`）**。原本 LINE 自動跳、其餘只顯示手動引導；本次升級為「能自動跳就自動跳」：Kakao 走官方 `kakaotalk://web/openExternal` scheme、**Android 上 FB／IG／Messenger／微信改用 `intent://` 嘗試自動開 Chrome**（帶 `extEsc=1`/`kkEsc=1` 防迴圈），iOS 或自動跳失敗才顯示全版引導，並補「加入主畫面最穩」提示。以樣本 UA 驗證 LINE/Kakao/FB/IG 偵測正確、`Baseline` 不誤判、正常瀏覽器零影響。
