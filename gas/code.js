@@ -1160,7 +1160,7 @@ function pushChatCard_(status, title, rows, note) {
   ] } });
   
   // P0-1: 組合手機端推播通知的 fallback 預覽文字 text
-  let fallbackText = icon + " " + title;
+  let fallbackText = icon + " 【調代課系統】" + title;
   if (rows && rows.length > 0) {
     const details = rows.slice(0, 2).map(function (r) { return r.label + ": " + r.text; }).join(", ");
     fallbackText += " (" + details + ")";
@@ -1170,7 +1170,7 @@ function pushChatCard_(status, title, rows, note) {
   const payload = {
     text: fallbackText,
     cardsV2: [{ cardId: "c-" + Date.now(), card: {
-      header: { title: icon + " " + title, subtitle: CONFIG.SCHOOL_SHORT + "調代課系統" },
+      header: { title: icon + " " + title + "｜調代課系統", subtitle: CONFIG.SCHOOL_SHORT + "調代課系統" },
       sections: [{ widgets: widgets }]
     } }]
   };
@@ -1217,7 +1217,7 @@ function notifyTeacherChatInvite_(data, serial, opts) {
   var payload = {
     text: fallback,
     cardsV2: [{ cardId: "inv-" + serial, card: {
-      header: { title: "🔔 " + kind + "邀請 · " + invited + " 老師", subtitle: CONFIG.SCHOOL_SHORT + "調代課系統" },
+      header: { title: "🔔 " + kind + "邀請 · " + invited + " 老師｜調代課系統", subtitle: CONFIG.SCHOOL_SHORT + "調代課系統" },
       sections: [{ widgets: widgets }]
     } }]
   };
