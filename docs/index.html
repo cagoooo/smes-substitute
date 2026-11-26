@@ -78,8 +78,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.11.26-5">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.11.26-5">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.11.26-6">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.11.26-6">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -91,7 +91,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="og-preview.png?v=2026.11.26-5">
+  <meta name="og-preview.png?v=2026.11.26-6">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
@@ -228,8 +228,6 @@
     .login-btn:hover{transform:translateY(-1px)}
     .login-btn--primary{color:#fff;background:linear-gradient(135deg,#3b82f6,#2563eb);box-shadow:0 4px 0 #1d4ed8}
     .login-btn--primary:hover{color:#fff;filter:brightness(1.05)}
-    .login-btn--ghost{color:#c2410c;background:#fff7ed;border:1.5px solid #fdba74}
-    .login-btn--ghost:hover{color:#9a3412}
     .login-shell #loginCard{background:#fff;padding:clamp(32px,3.4vw,52px) clamp(24px,3vw,48px);border-radius:22px;
       box-shadow:0 2px 4px rgba(15,23,42,.04),0 30px 60px -28px rgba(30,64,175,.45);text-align:center;width:min(480px,100%);border:3px solid transparent;transition:border-color .3s ease}
     .login-shell #loginIcon{font-size:clamp(56px,4.6vw,72px);line-height:1.1}
@@ -255,9 +253,8 @@
         <li><span class="fi">💰</span><div><b>月結鐘點費</b><span>選月份一鍵產出應領總表、對帳表與逐筆明細 Excel</span></div></li>
       </ul>
       <div class="login-other">
-        <p><b>他校老師也想用？</b>操作手冊不用登入就能看，歡迎參考流程、改良成自己學校的版本。</p>
-        <a class="login-btn login-btn--primary" href="guide.html?v=2026.11.26-5" target="_blank" rel="noopener">📘 查看組長操作手冊</a>
-        <button type="button" class="login-btn login-btn--ghost" onclick="toggleContactPanel(true)">💬 聯絡阿凱老師</button>
+        <p><b>他校老師也想用？</b>操作手冊不用登入就能看，歡迎參考流程、改良成自己學校的版本；想導入請按右下角「聯絡阿凱老師」。</p>
+        <a class="login-btn login-btn--primary" href="guide.html?v=2026.11.26-6" target="_blank" rel="noopener">📘 查看組長操作手冊</a>
       </div>
     </section>
     <div id="loginCard">
@@ -322,7 +319,7 @@
   </a>
         </span><div class="d-flex align-items-center gap-2">
         <div id="userBadge" class="user-tag">身分驗證中...</div>
-        <a href="guide.html?v=2026.11.26-5" target="_blank" rel="noopener" class="btn btn-sm btn-outline-light fw-bold" style="font-size:13px; padding:3px 14px; border-radius:20px;" title="組長操作手冊">📘 操作手冊</a>
+        <a href="guide.html?v=2026.11.26-6" target="_blank" rel="noopener" class="btn btn-sm btn-outline-light fw-bold" style="font-size:13px; padding:3px 14px; border-radius:20px;" title="組長操作手冊">📘 操作手冊</a>
         <button id="adminConsoleBtn" onclick="openAdminConsole()" class="btn btn-sm btn-info text-white fw-bold" style="display:none; font-size:13px; padding:3px 14px; border-radius:20px;">⚙️ 系統管理</button>
         <button id="logoutBtn" onclick="logout()" class="btn btn-sm btn-outline-light" style="display:none; font-size:13px; padding:3px 14px; border-radius:20px;">登出</button>
       </div></div>
@@ -2160,7 +2157,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.11.26-5';   // 與 sw.js 同步
+    var APP_VERSION='2026.11.26-6';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;
