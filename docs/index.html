@@ -78,8 +78,8 @@
   <meta property="og:url" content="https://cagoooo.github.io/smes-substitute/">
   <meta property="og:title" content="石門國小線上調代課系統">
   <meta property="og:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.11.26-4">
-  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.11.26-4">
+  <meta property="og:image" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.11.26-5">
+  <meta property="og:image:secure_url" content="https://cagoooo.github.io/smes-substitute/og-preview.png?v=2026.11.26-5">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
   <meta property="og:image:type" content="image/png">
@@ -91,7 +91,7 @@
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="石門國小線上調代課系統">
   <meta name="twitter:description" content="教師查課表、找人代課、節次調課、教學組出單與兼代課鐘點結算一站完成。">
-  <meta name="og-preview.png?v=2026.11.26-4">
+  <meta name="og-preview.png?v=2026.11.26-5">
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <!-- 搜尋選單 CSS -->
@@ -204,20 +204,70 @@
 
   <div id="loading" class="loading-overlay"><div class="spinner-border text-primary me-2"></div><div id="loadMsg" class="fw-bold">正在讀取...</div></div>
 
+  <style>
+    /* 🔑 登入頁：桌機左右雙欄（左介紹、右登入），手機登入卡在上 */
+    .login-stage{position:fixed;inset:0;z-index:9000;overflow-y:auto;flex-direction:column;align-items:center;
+      background:radial-gradient(1200px 600px at 10% 0%,#e0ecff 0%,transparent 60%),radial-gradient(900px 500px at 100% 100%,#f3e8ff 0%,transparent 55%),#f1f5f9;
+      font-family:system-ui,-apple-system,"Segoe UI","Microsoft JhengHei",sans-serif;color:#1e293b}
+    .login-shell{flex:1 0 auto;width:min(1360px,100%);padding:clamp(24px,5vh,72px) clamp(16px,4vw,56px) 24px;display:grid;gap:clamp(24px,4vw,72px);align-items:center;grid-template-columns:1fr}
+    @media (min-width:1000px){.login-shell{grid-template-columns:minmax(0,1.15fr) minmax(400px,.85fr)}}
+    @media (max-width:999.98px){.login-intro{order:2}.login-shell #loginCard{order:1;justify-self:center}}
+    .login-eyebrow{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:clamp(14px,1.1vw,17px);color:#2563eb;background:#fff;border:1px solid #dbe5f5;padding:6px 14px;border-radius:99px;margin:0 0 18px}
+    .login-h1{font-size:clamp(34px,4.2vw,64px);font-weight:900;line-height:1.12;letter-spacing:-.01em;margin:0 0 16px}
+    .login-h1 span{background:linear-gradient(135deg,#2563eb,#7c3aed);-webkit-background-clip:text;background-clip:text;color:transparent}
+    .login-lede{font-size:clamp(17px,1.45vw,22px);line-height:1.7;color:#475569;margin:0 0 26px;max-width:36em}
+    .login-feats{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(100%,250px),1fr));margin:0 0 22px;padding:0;list-style:none}
+    .login-feats li{background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:16px 18px;box-shadow:0 1px 2px rgba(15,23,42,.04),0 10px 24px -16px rgba(15,23,42,.25);display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start}
+    .login-feats .fi{font-size:clamp(26px,2vw,32px);line-height:1}
+    .login-feats b{display:block;font-size:clamp(16px,1.2vw,19px);color:#0f172a;margin-bottom:3px}
+    .login-feats span{font-size:clamp(14.5px,1.05vw,16.5px);color:#64748b;line-height:1.6}
+    .login-other{display:flex;flex-wrap:wrap;align-items:center;gap:12px 14px;background:#fff;border:1.5px dashed #c7d7f2;border-radius:16px;padding:16px 18px}
+    .login-other p{margin:0;flex:1 1 260px;font-size:clamp(15px,1.1vw,17px);color:#334155;line-height:1.6}
+    .login-other p b{color:#0f172a}
+    .login-btn{display:inline-flex;align-items:center;gap:8px;font-weight:800;font-size:clamp(15px,1.1vw,17px);border-radius:12px;padding:11px 18px;text-decoration:none;cursor:pointer;border:none;transition:transform .15s,box-shadow .15s,filter .15s}
+    .login-btn:hover{transform:translateY(-1px)}
+    .login-btn--primary{color:#fff;background:linear-gradient(135deg,#3b82f6,#2563eb);box-shadow:0 4px 0 #1d4ed8}
+    .login-btn--primary:hover{color:#fff;filter:brightness(1.05)}
+    .login-btn--ghost{color:#c2410c;background:#fff7ed;border:1.5px solid #fdba74}
+    .login-btn--ghost:hover{color:#9a3412}
+    .login-shell #loginCard{background:#fff;padding:clamp(32px,3.4vw,52px) clamp(24px,3vw,48px);border-radius:22px;
+      box-shadow:0 2px 4px rgba(15,23,42,.04),0 30px 60px -28px rgba(30,64,175,.45);text-align:center;width:min(480px,100%);border:3px solid transparent;transition:border-color .3s ease}
+    .login-shell #loginIcon{font-size:clamp(56px,4.6vw,72px);line-height:1.1}
+    .login-shell #loginTitle{font-size:clamp(24px,2vw,32px);font-weight:900;color:#1e293b;margin:12px 0 8px}
+    .login-shell #loginDesc{font-size:clamp(16px,1.2vw,18.5px);color:#64748b;margin:0 0 6px}
+    .login-shell #gisButton{margin:22px 0 14px !important;min-height:44px}
+    .login-shell #loginNote{font-size:clamp(14px,1vw,15.5px) !important;color:#64748b}
+    .login-shell #loginError{font-size:15px}
+    .login-stage > .site-credit{position:static !important;padding:14px 16px 22px;font-size:14px}
+    .login-stage .contact-dock{position:fixed !important}
+  </style>
   <!-- 🔑 Google 登入疊層 -->
-  <div id="loginOverlay" style="position:fixed; inset:0; background:#f1f5f9; z-index:9000; display:flex; align-items:center; justify-content:center;">
-    <div id="loginCard" style="background:white; padding:40px 36px; border-radius:16px; box-shadow:0 10px 25px rgba(0,0,0,0.1); text-align:center; max-width:420px; width:92%; margin-bottom:60px; border:3px solid transparent; transition:border-color 0.3s ease;">
-      <div id="loginIcon" style="font-size:52px;">📅</div>
-      <h4 id="loginTitle" class="fw-bold mt-2" style="color:#1e293b;">石門國小調代課系統</h4>
-      <p id="loginDesc" class="text-muted" style="font-size:14px;">請使用學校提供的 Google 帳號登入</p>
+  <div id="loginOverlay" class="login-stage" style="display:flex;">
+    <div class="login-shell">
+    <section class="login-intro" aria-label="系統介紹">
+      <p class="login-eyebrow">🏫 桃園市龍潭區石門國民小學</p>
+      <h1 class="login-h1">線上<span>調代課系統</span></h1>
+      <p class="login-lede">老師自己找代課、組長一鍵出單、月底自動算鐘點費——請假調課不用再拿著紙單到處跑。</p>
+      <ul class="login-feats">
+        <li><span class="fi">🔍</span><div><b>智慧找代課</b><span>同班、同科優先，自動避開當天滿堂、本月已代很多次的老師</span></div></li>
+        <li><span class="fi">🗓️</span><div><b>預告請假自己找</b><span>選日期列出當天每節課，逐節挑代課老師送出邀請</span></div></li>
+        <li><span class="fi">💬</span><div><b>邀請即時通知</b><span>Email＋Google Chat 卡片，手機一鍵「同意／有困難」</span></div></li>
+        <li><span class="fi">💰</span><div><b>月結鐘點費</b><span>選月份一鍵產出應領總表、對帳表與逐筆明細 Excel</span></div></li>
+      </ul>
+      <div class="login-other">
+        <p><b>他校老師也想用？</b>操作手冊不用登入就能看，歡迎參考流程、改良成自己學校的版本。</p>
+        <a class="login-btn login-btn--primary" href="guide.html?v=2026.11.26-5" target="_blank" rel="noopener">📘 查看組長操作手冊</a>
+        <button type="button" class="login-btn login-btn--ghost" onclick="toggleContactPanel(true)">💬 聯絡阿凱老師</button>
+      </div>
+    </section>
+    <div id="loginCard">
+      <div id="loginIcon">📅</div>
+      <h2 id="loginTitle">石門國小調代課系統</h2>
+      <p id="loginDesc">請使用學校提供的 Google 帳號（@mail2.smes.tyc.edu.tw）登入</p>
       <div id="gisButton" class="d-flex justify-content-center my-3"></div>
       <div id="loginError" class="text-danger small fw-bold" style="display:none;"></div>
-      <p id="loginNote" class="text-muted mt-3" style="font-size:12px;">若無法進入，請聯繫教學組確認您在授權名單內。</p>
-      <!-- 📘 公開操作手冊：不用登入即可看，給他校老師參考改良 -->
-      <div id="loginGuide" style="margin-top:18px; padding-top:16px; border-top:1px dashed #e2e8f0;">
-        <a href="guide.html?v=2026.11.26-4" target="_blank" rel="noopener" class="btn btn-outline-primary btn-sm fw-bold rounded-pill px-3" style="font-size:14px;">📘 查看組長操作手冊</a>
-        <div class="text-muted mt-2" style="font-size:12.5px; line-height:1.6;">不用登入即可瀏覽完整操作流程<br>歡迎他校老師參考，改良成自己學校的版本</div>
-      </div>
+      <p id="loginNote" class="mt-3 mb-0">若無法進入，請聯繫教學組確認您在授權名單內。</p>
+    </div>
     </div>
     <footer class="site-credit" style="position:absolute; bottom:0; left:0; right:0; border:0; background:transparent;">
       Made with <span class="site-credit__heart" aria-label="愛心">❤️</span> by
@@ -272,7 +322,7 @@
   </a>
         </span><div class="d-flex align-items-center gap-2">
         <div id="userBadge" class="user-tag">身分驗證中...</div>
-        <a href="guide.html?v=2026.11.26-4" target="_blank" rel="noopener" class="btn btn-sm btn-outline-light fw-bold" style="font-size:13px; padding:3px 14px; border-radius:20px;" title="組長操作手冊">📘 操作手冊</a>
+        <a href="guide.html?v=2026.11.26-5" target="_blank" rel="noopener" class="btn btn-sm btn-outline-light fw-bold" style="font-size:13px; padding:3px 14px; border-radius:20px;" title="組長操作手冊">📘 操作手冊</a>
         <button id="adminConsoleBtn" onclick="openAdminConsole()" class="btn btn-sm btn-info text-white fw-bold" style="display:none; font-size:13px; padding:3px 14px; border-radius:20px;">⚙️ 系統管理</button>
         <button id="logoutBtn" onclick="logout()" class="btn btn-sm btn-outline-light" style="display:none; font-size:13px; padding:3px 14px; border-radius:20px;">登出</button>
       </div></div>
@@ -848,7 +898,8 @@
          auto_select: true
        });
        google.accounts.id.renderButton(document.getElementById('gisButton'), {
-         theme: "filled_blue", size: "large", text: "signin_with", locale: "zh_TW", width: 280
+         theme: "filled_blue", size: "large", text: "signin_with", locale: "zh_TW", shape: "pill",
+         width: Math.max(220, Math.min(360, (document.getElementById('gisButton').clientWidth || 300)))   // 依卡片寬度放大（Google 上限 400）
        });
      }
 
@@ -2109,7 +2160,7 @@
   <script>
   (function(){
     if(!('serviceWorker' in navigator)) return;
-    var APP_VERSION='2026.11.26-4';   // 與 sw.js 同步
+    var APP_VERSION='2026.11.26-5';   // 與 sw.js 同步
 
     // P0-1: 偵測 Scope 衝突的 Service Worker 並註銷自癒
     var expectedScope = new URL('./', location.href).href;
