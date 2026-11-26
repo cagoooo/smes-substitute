@@ -51,9 +51,20 @@ if (Test-Path $indexPath) {
     $indexContent = Get-Content $indexPath -Encoding UTF8 -Raw
     $indexContent = $indexContent -replace "var APP_VERSION='[^']+';", "var APP_VERSION='$newVersion';"
     $indexContent = $indexContent -replace "og-preview.png\?v=[^`"]*", "og-preview.png?v=$newVersion"
+    $indexContent = $indexContent -replace "guide\.html(\?v=[^`"]*)?`"", "guide.html?v=$newVersion`""  # 手冊連結帶版本號，避開 GitHub Pages 10 分鐘暫存
     $indexContent = $indexContent -replace "twitter:image.*og-preview.png\?v=[^`"]*", "og-preview.png?v=$newVersion"
     [System.IO.File]::WriteAllText($indexPath, $indexContent, (New-Object System.Text.UTF8Encoding($false)))
     Write-Host "✓ index.html version updated." -ForegroundColor Green
+}
+# 3b. 手冊／對齊清單：頁面版本 meta（新版通知比對用）＋手冊連結版本號
+foreach ($pagePath in @("docs/guide.html", "docs/checklist.html")) {
+    if (Test-Path $pagePath) {
+        $pageContent = Get-Content $pagePath -Encoding UTF8 -Raw
+        $pageContent = $pageContent -replace '<meta name="build-version" content="[^"]*">', "<meta name=`"build-version`" content=`"$newVersion`">"
+        $pageContent = $pageContent -replace "guide\.html(\?v=[^`"]*)?`"", "guide.html?v=$newVersion`""
+        [System.IO.File]::WriteAllText($pagePath, $pageContent, (New-Object System.Text.UTF8Encoding($false)))
+        Write-Host "✓ $pagePath version updated." -ForegroundColor Green
+    }
 }
 
 # 4. Replace version in docs/sw.js

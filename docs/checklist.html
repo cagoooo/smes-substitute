@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="build-version" content="2026.11.26-3">
 <meta name="description" content="石門國小線上調代課系統｜115 學年（8 月）新學期上線對齊清單：教學組提供資料、需一起確認、系統端作業三部分，教學組與系統端一起確認對齊。">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
@@ -115,7 +116,7 @@
       <p class="lede">系統核心功能都好了，8 月新學期只要備妥資料就能一次更新上線。這份給<b>教學組</b>與系統端一起確認對齊——勾選狀態會自動記在這台裝置上。</p>
       <div class="meta">
         <a href="./" rel="noreferrer">← 回調代課系統</a>
-        <a href="guide.html">📘 操作手冊</a>
+        <a href="guide.html?v=2026.11.26-3">📘 操作手冊</a>
       </div>
       <div class="prog">
         <div class="bar"><div class="fill" id="progFill"></div></div>
@@ -179,7 +180,7 @@
           <li><span class="ic">→</span><span>抽幾位老師 <span class="k">🎭 模擬登入</span> 驗證課表正確</span></li>
           <li><span class="ic">→</span><span>確認／填入代課鐘點費單價</span></li>
         </ul>
-        <div class="note warn"><span class="ni">💡</span><div>操作細節都在 <a href="guide.html" style="color:var(--accent);font-weight:600">📘 操作手冊</a>。系統網址：<span class="path">cagoooo.github.io/smes-substitute</span></div></div>
+        <div class="note warn"><span class="ni">💡</span><div>操作細節都在 <a href="guide.html?v=2026.11.26-3" style="color:var(--accent);font-weight:600">📘 操作手冊</a>。系統網址：<span class="path">cagoooo.github.io/smes-substitute</span></div></div>
       </div>
     </section>
 
@@ -222,6 +223,74 @@
     });
     refresh();
   })();
+</script>
+<script>
+/* 🔔 新版通知（手冊／對齊清單共用寫法）：比對「這一頁的版本」與伺服器 version.json，
+   伺服器較新才跳通知列；按「重新整理載入」會帶版本號重開，保證拿到新版（避開 GitHub Pages 10 分鐘暫存）。 */
+(function(){
+  var meta=document.querySelector('meta[name="build-version"]');
+  var PAGE=meta?meta.content:'';
+  if(!PAGE) return;
+  var REG=null, shownFor='', updating=false;
+  function parse(v){var m=String(v||'').match(/^(\d{4})\.(\d{2})\.(\d{2})-(\d+)$/);return m?[+(m[1]+m[2]+m[3]),+m[4]]:null;}
+  function newer(c,b){ if(!c||c===b) return false; var x=parse(c),y=parse(b); if(!x||!y) return true;
+    return x[0]!==y[0]?x[0]>y[0]:x[1]>y[1]; }   // 日期較舊或同版＝暫存殘留，不通知
+  function ss(k,v){ try{ if(v===undefined) return sessionStorage.getItem(k); if(v===null) sessionStorage.removeItem(k); else sessionStorage.setItem(k,v);}catch(e){} return null; }
+  function freshUrl(v){ var u=new URL(location.href); u.searchParams.set('v',v); return u.pathname+u.search+u.hash; }
+  function apply(v){
+    if(updating) return; updating=true;
+    var b=document.getElementById('sw-update-bar'); if(b) b.remove();
+    ss('page_sw_updated',v);
+    var go=function(){ location.replace(freshUrl(v)); };
+    if(REG&&REG.waiting){
+      navigator.serviceWorker.addEventListener('controllerchange',go);
+      REG.waiting.postMessage({type:'SKIP_WAITING'});
+      setTimeout(go,8000);                       // 保底：手機接管較慢也會重開，不註銷 SW
+    } else go();
+  }
+  function css(){
+    if(document.getElementById('sw-bar-css')) return;
+    var s=document.createElement('style'); s.id='sw-bar-css';
+    s.textContent='#sw-update-bar,#sw-updated-toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:9999;font:600 16px/1.4 -apple-system,"Segoe UI","Microsoft JhengHei",sans-serif;box-shadow:0 16px 38px -12px rgba(0,0,0,.6);border-radius:16px;width:max-content;max-width:calc(100vw - 24px)}'
+      +'#sw-update-bar{display:flex;align-items:center;gap:10px;flex-wrap:nowrap;justify-content:center;background:#1e293b;color:#fff;padding:12px 14px 12px 18px;border:1px solid #334155}'
+      +'#sw-update-bar button{cursor:pointer;border:none;border-radius:10px;font:inherit}'
+      +'#sw-go{background:linear-gradient(135deg,#60a5fa,#2563eb);color:#fff;padding:9px 16px;box-shadow:0 3px 0 #1d4ed8}#sw-go:active{transform:translateY(2px);box-shadow:0 1px 0 #1d4ed8}'
+      +'#sw-x{background:transparent;color:#94a3b8;padding:8px 10px}#sw-x:hover{color:#fff}'
+      +'#sw-updated-toast{background:linear-gradient(135deg,#22c55e,#16a34a);color:#fff;padding:12px 20px;opacity:0;transition:opacity .3s}#sw-updated-toast.show{opacity:1}';
+    document.head.appendChild(s);
+  }
+  function showBar(v){
+    if(shownFor===v||ss('page_sw_dismiss')===v||ss('page_sw_updated')===v) return;
+    shownFor=v; css();
+    var old=document.getElementById('sw-update-bar'); if(old) old.remove();
+    var b=document.createElement('div'); b.id='sw-update-bar'; b.setAttribute('role','status');
+    b.innerHTML='<span>✦ 這一頁有新版本了</span><button id="sw-go" type="button">重新整理載入</button><button id="sw-x" type="button" aria-label="稍後再說">✕</button>';
+    document.body.appendChild(b);
+    document.getElementById('sw-go').onclick=function(){ apply(v); };
+    document.getElementById('sw-x').onclick=function(){ ss('page_sw_dismiss',v); b.remove(); };
+  }
+  function toast(){
+    css(); var t=document.createElement('div'); t.id='sw-updated-toast'; t.setAttribute('role','status');
+    t.textContent='✅ 已更新到最新版 '+PAGE; document.body.appendChild(t);
+    requestAnimationFrame(function(){ t.classList.add('show'); });
+    setTimeout(function(){ t.classList.remove('show'); setTimeout(function(){ t.remove(); },350); },2800);
+  }
+  var done=ss('page_sw_updated');
+  if(done){ ss('page_sw_updated',null); if(done===PAGE) toast(); }
+  function check(){
+    fetch('version.json?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.json();}).then(function(d){
+      if(d&&newer(d.version,PAGE)){ if(REG) REG.update().catch(function(){}); showBar(d.version); }
+    }).catch(function(){});
+  }
+  var local=/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  if('serviceWorker' in navigator){
+    if(local){ navigator.serviceWorker.getRegistrations().then(function(rs){ rs.forEach(function(r){ r.unregister(); }); }).catch(function(){}); }
+    else navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).then(function(reg){ REG=reg; }).catch(function(){});
+  }
+  ['focus','online','pageshow'].forEach(function(ev){ addEventListener(ev,check); });
+  document.addEventListener('visibilitychange',function(){ if(document.visibilityState==='visible') check(); });
+  setTimeout(check,1500); setInterval(check,180000);
+})();
 </script>
 </body>
 </html>
