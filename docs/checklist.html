@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="build-version" content="2026.11.26-3">
+<meta name="build-version" content="2026.11.26-4">
 <meta name="description" content="石門國小線上調代課系統｜115 學年（8 月）新學期上線對齊清單：教學組提供資料、需一起確認、系統端作業三部分，教學組與系統端一起確認對齊。">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="icon" href="favicon.ico" sizes="any">
@@ -41,69 +41,108 @@
     --ok:#5bd48a; --ok-soft:#12271b; --warn:#e5a24a; --warn-soft:#2c2113; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px -14px rgba(0,0,0,.6);
   }
   *{box-sizing:border-box}
-  body{margin:0}
-  .wrap{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.7;-webkit-font-smoothing:antialiased;padding:0 20px 72px}
-  .col{max-width:820px;margin:0 auto}
+  /* 根字級隨螢幕放大（手機 16 → 平板 17 → 桌機 18 → 大螢幕 19px） */
+  html{font-size:16px;scroll-behavior:smooth}
+  @media (min-width:768px){html{font-size:17px}}
+  @media (min-width:1200px){html{font-size:18px}}
+  @media (min-width:1680px){html{font-size:19px}}
+  body{margin:0;background:var(--bg)}
+  .wrap{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.75;-webkit-font-smoothing:antialiased;padding:0 clamp(14px,3vw,36px) 72px}
+  /* 桌機善用寬度：不再鎖 820px 窄欄 */
+  .col{max-width:min(1500px,100%);margin:0 auto}
 
-  header.hero{padding:52px 0 26px;border-bottom:1px solid var(--line)}
-  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 12px}
-  h1.title{font-size:clamp(26px,4.6vw,38px);line-height:1.2;margin:0 0 14px;font-weight:800;letter-spacing:-.01em;text-wrap:balance}
-  .lede{font-size:16.5px;color:var(--ink-soft);margin:0;max-width:60ch}
+  /* 桌機版：左側固定進度面板＋右側內容 */
+  .side{display:none}
+  @media (min-width:1200px){
+    .layout{display:grid;grid-template-columns:clamp(250px,17vw,300px) minmax(0,1fr);gap:clamp(32px,3vw,56px);align-items:start}
+    .side{display:block;position:sticky;top:24px;padding-top:38px;max-height:calc(100vh - 24px);overflow:auto}
+    header.hero .prog{display:none}
+  }
+  .side-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 18px 14px}
+  .side-title{font-size:.8125rem;letter-spacing:.14em;color:var(--ink-faint);font-weight:800;margin:0 0 6px}
+  .big-num{font-size:2.6rem;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+  .big-num small{font-size:1.1rem;color:var(--ink-faint);font-weight:700;margin-left:4px}
+  .side-card .bar{height:10px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line);overflow:hidden;margin:10px 0 12px}
+  .side-card .fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--sim));border-radius:99px;transition:width .35s ease}
+  .side-secs{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:2px}
+  .side-secs li{display:flex;justify-content:space-between;gap:8px;font-size:.9375rem;color:var(--ink-soft);padding:4px 0}
+  .side-secs li b{font-variant-numeric:tabular-nums;color:var(--ink)}
+  .side-secs li.full b{color:var(--ok)}
+  .side nav{display:flex;flex-direction:column;gap:4px;margin-top:16px}
+  .side nav a{display:grid;grid-template-columns:1.6em 1fr;gap:8px;align-items:center;padding:9px 12px;border-radius:11px;color:var(--ink-soft);text-decoration:none;font-weight:700;font-size:1rem;border:1px solid transparent;transition:background .15s,color .15s,border-color .15s}
+  .side nav a:hover{background:var(--panel);border-color:var(--line);color:var(--ink)}
+  .side nav a.active{background:var(--accent-soft);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 28%,var(--line))}
+  .side-box{margin-top:14px;padding:12px 14px;border:1px solid var(--line);border-radius:12px;background:var(--panel);display:flex;flex-direction:column;gap:4px}
+  .side-box a{color:var(--ink-soft);text-decoration:none;font-size:.9375rem;font-weight:600;padding:3px 2px}
+  .side-box a:hover{color:var(--accent)}
+  /* 已完成功能：寬螢幕卡片網格 */
+  .feat{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(min(100%,330px),1fr));margin:0;padding:0;list-style:none}
+  .feat li{display:grid;grid-template-columns:auto 1fr;gap:10px;padding:14px 16px;border:1px solid var(--line);border-radius:12px;background:var(--panel-2);color:var(--ink-soft);font-size:1rem}
+  .feat li b{display:block;color:var(--ink);font-size:1.0625rem;margin-bottom:2px}
+  /* A、B 兩張清單在寬螢幕並排 */
+  .duo{display:grid;gap:0 clamp(24px,2.5vw,40px);grid-template-columns:repeat(auto-fit,minmax(min(100%,520px),1fr));align-items:start}
+  /* C 系統端作業：寬螢幕兩欄 */
+  @media (min-width:1000px){ul.info-list.two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 32px}}
+
+  header.hero{padding:clamp(36px,5vw,64px) 0 clamp(24px,3vw,34px);border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:0.8125rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 12px}
+  h1.title{font-size:clamp(28px,4.2vw,56px);line-height:1.2;margin:0 0 14px;font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+  .lede{font-size:1.156rem;color:var(--ink-soft);margin:0;max-width:60ch}
   .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
-  .meta a{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-soft);background:var(--panel);border:1px solid var(--line);padding:7px 12px;border-radius:99px;text-decoration:none}
+  .meta a{display:inline-flex;align-items:center;gap:7px;font-size:0.9062rem;color:var(--ink-soft);background:var(--panel);border:1px solid var(--line);padding:7px 12px;border-radius:99px;text-decoration:none}
   .meta a:hover{border-color:var(--accent);color:var(--accent)}
 
   /* progress */
   .prog{margin:22px 0 4px;display:flex;align-items:center;gap:14px}
   .prog .bar{flex:1;height:10px;border-radius:99px;background:var(--panel-2);border:1px solid var(--line);overflow:hidden}
   .prog .fill{height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--sim));border-radius:99px;transition:width .35s ease}
-  .prog .lbl{font-size:13px;font-weight:700;color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap}
+  .prog .lbl{font-size:0.9062rem;font-weight:700;color:var(--ink-soft);font-variant-numeric:tabular-nums;white-space:nowrap}
   @media (prefers-reduced-motion:reduce){.prog .fill{transition:none}}
 
-  section{padding-top:38px;scroll-margin-top:20px}
+  section{padding-top:clamp(36px,3.6vw,54px);scroll-margin-top:20px}
   .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:16px}
-  .sec-ico{font-size:22px;line-height:1;transform:translateY(1px)}
-  h2{font-size:21px;font-weight:800;margin:0;letter-spacing:-.01em}
-  .sec-sub{color:var(--ink-faint);font-size:13.5px;margin:3px 0 0}
+  .sec-ico{font-size:1.625rem;line-height:1;transform:translateY(1px)}
+  h2{font-size:1.625rem;font-weight:800;margin:0;letter-spacing:-.01em}
+  .sec-sub{color:var(--ink-faint);font-size:0.9375rem;margin:3px 0 0}
 
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px 20px}
-  @media(max-width:560px){.card{padding:10px 14px}.wrap{padding:0 14px 56px}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:clamp(12px,1.6vw,24px) clamp(16px,2.2vw,32px)}
+  @media(max-width:560px){.wrap{padding-bottom:56px}}
 
   /* checkable rows */
   .items{display:flex;flex-direction:column}
-  .chk{display:grid;grid-template-columns:26px 1fr;gap:13px;align-items:start;padding:15px 4px;border-bottom:1px solid var(--line);cursor:pointer}
+  .chk{display:grid;grid-template-columns:1.6em 1fr;gap:13px;align-items:start;padding:15px 4px;border-bottom:1px solid var(--line);cursor:pointer}
   .chk:last-child{border-bottom:0}
-  .chk input{appearance:none;-webkit-appearance:none;margin:2px 0 0;width:22px;height:22px;border:2px solid var(--line-strong);border-radius:7px;background:var(--panel-2);cursor:pointer;flex:none;position:relative;transition:background .15s,border-color .15s}
+  .chk input{appearance:none;-webkit-appearance:none;margin:2px 0 0;width:1.4em;height:1.4em;border:2px solid var(--line-strong);border-radius:7px;background:var(--panel-2);cursor:pointer;flex:none;position:relative;transition:background .15s,border-color .15s}
   .chk input:checked{background:var(--ok);border-color:var(--ok)}
-  .chk input:checked::after{content:"";position:absolute;left:6px;top:2px;width:6px;height:11px;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
+  .chk input:checked::after{content:"";position:absolute;left:32%;top:12%;width:30%;height:55%;border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(45deg)}
   .chk input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-  .chk .t{font-weight:600;font-size:15.5px}
-  .chk .d{color:var(--ink-soft);font-size:13.5px;margin-top:2px}
+  .chk .t{display:block;font-weight:600;font-size:1.062rem}
+  .chk .d{display:block;color:var(--ink-soft);font-size:0.9375rem;margin-top:2px}
   .chk input:checked ~ .txt .t{text-decoration:line-through;color:var(--ink-faint)}
   .chk input:checked ~ .txt .d{color:var(--ink-faint)}
   .chk.crit .t{color:var(--warn)}
-  .crit-badge{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:.04em;color:#fff;background:var(--warn);border-radius:6px;padding:1px 7px;margin-left:8px;vertical-align:2px}
+  .crit-badge{display:inline-block;font-size:0.75rem;font-weight:800;letter-spacing:.04em;color:#fff;background:var(--warn);border-radius:6px;padding:1px 7px;margin-left:8px;vertical-align:2px}
 
   /* info list (系統端) */
   .info-list{display:flex;flex-direction:column;gap:11px;margin:0;padding:0;list-style:none}
-  .info-list li{display:grid;grid-template-columns:auto 1fr;gap:10px;font-size:14.5px;color:var(--ink-soft)}
+  .info-list li{display:grid;grid-template-columns:auto 1fr;gap:10px;font-size:1rem;color:var(--ink-soft)}
   .info-list li b{color:var(--ink)}
   .info-list .ic{color:var(--accent)}
 
-  .note{display:grid;grid-template-columns:auto 1fr;gap:11px;border-radius:11px;padding:13px 15px;margin-top:22px;font-size:14px;border:1px solid var(--line)}
-  .note .ni{font-size:16px;line-height:1.5}
+  .note{display:grid;grid-template-columns:auto 1fr;gap:11px;border-radius:11px;padding:13px 15px;margin-top:22px;font-size:0.9688rem;border:1px solid var(--line)}
+  .note .ni{font-size:1.062rem;line-height:1.5}
   .note.warn{background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 34%,var(--line))}
   .note b{color:var(--ink)}
-  .k{font-weight:700;background:var(--panel-2);border:1px solid var(--line-strong);border-radius:7px;padding:1px 8px;font-size:13.5px;white-space:nowrap}
-  .path{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);word-break:break-all}
+  .k{font-weight:700;background:var(--panel-2);border:1px solid var(--line-strong);border-radius:7px;padding:1px 8px;font-size:0.9375rem;white-space:nowrap}
+  .path{font-family:var(--mono);font-size:0.8438rem;color:var(--ink-soft);word-break:break-all}
 
-  footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:13px;display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
-  .site-credit{text-align:center;padding:20px 16px 0;font-size:13px;color:var(--ink-faint);font-family:var(--sans)}
+  footer{margin-top:52px;padding-top:22px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:0.9062rem;display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
+  .site-credit{text-align:center;padding:20px 16px 0;font-size:0.9062rem;color:var(--ink-faint);font-family:var(--sans)}
   .site-credit__heart{display:inline-block;margin:0 2px;filter:saturate(1.1)}
   .site-credit__author{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;padding-bottom:1px;transition:color .2s,border-color .2s}
   .site-credit__author:hover{color:var(--accent);border-bottom-color:var(--accent)}
   a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
-  .reset{background:none;border:1px solid var(--line);color:var(--ink-faint);font:inherit;font-size:12px;padding:4px 10px;border-radius:8px;cursor:pointer}
+  .reset{background:none;border:1px solid var(--line);color:var(--ink-faint);font:inherit;font-size:0.8125rem;padding:4px 10px;border-radius:8px;cursor:pointer}
   .reset:hover{border-color:var(--warn);color:var(--warn)}
 </style>
 </head>
@@ -116,35 +155,61 @@
       <p class="lede">系統核心功能都好了，8 月新學期只要備妥資料就能一次更新上線。這份給<b>教學組</b>與系統端一起確認對齊——勾選狀態會自動記在這台裝置上。</p>
       <div class="meta">
         <a href="./" rel="noreferrer">← 回調代課系統</a>
-        <a href="guide.html?v=2026.11.26-3">📘 操作手冊</a>
+        <a href="guide.html?v=2026.11.26-4">📘 操作手冊</a>
       </div>
       <div class="prog">
         <div class="bar"><div class="fill" id="progFill"></div></div>
         <div class="lbl"><span id="progNum">0</span>／<span id="progTot">0</span> 已確認</div>
       </div>
     </header>
+  </div>
+
+  <div class="col layout">
+    <aside class="side" aria-label="對齊進度與目錄">
+      <div class="side-card">
+        <p class="side-title">對齊進度</p>
+        <div class="big-num"><span id="sideNum">0</span><small>／<span id="sideTot">0</span> 已確認</small></div>
+        <div class="bar"><div class="fill" id="sideFill"></div></div>
+        <ul class="side-secs">
+          <li data-sec="a"><span>📥 A · 教學組提供</span><b>0／0</b></li>
+          <li data-sec="b"><span>✅ B · 一起確認</span><b>0／0</b></li>
+        </ul>
+      </div>
+      <nav>
+        <a href="#done"><span>🏆</span>系統已完成功能</a>
+        <a href="#a"><span>📥</span>A · 教學組提供</a>
+        <a href="#b"><span>✅</span>B · 一起確認</a>
+        <a href="#c"><span>🛠️</span>C · 系統端作業</a>
+      </nav>
+      <div class="side-box">
+        <a href="./">← 回調代課系統</a>
+        <a href="guide.html?v=2026.11.26-4">📘 操作手冊</a>
+      </div>
+    </aside>
+    <main>
 
     <!-- 已完成功能展示 -->
     <section id="done">
       <div class="sec-head"><span class="sec-ico">🏆</span><div><h2>系統已完成功能</h2><p class="sec-sub">目前已上線、可直接使用的能力（2026 年 7 月）</p></div></div>
       <div class="card">
-        <ul class="info-list">
-          <li><span class="ic">✅</span><span><b>全校真實課表已進系統</b> —— 114 學年 32 班、66 位教師（含台語／客語本土語老師），老師登入就看到自己的課表</span></li>
-          <li><span class="ic">✅</span><span><b>一鍵上傳課表</b> —— 組長把各年級課表 PDF 拖進「課表匯入」即可更新整學期，會先顯示「哪些老師的課變了」再確認，舊表自動備份</span></li>
-          <li><span class="ic">✅</span><span><b>找代課智慧排序</b> —— 同班、同科優先，並自動把「這個月已代很多次」「當天已滿堂」的老師往後排，輪替更公平</span></li>
-          <li><span class="ic">✅</span><span><b>老師預告請假、自己找代課</b> —— 老師點「🗓️ 我要預告請假」選日期，系統列出當天每節課、逐節挑代課老師送出邀請，<b>不需教學組代找</b></span></li>
-          <li><span class="ic">✅</span><span><b>邀請即時通知</b> —— 被邀老師除了 Email，還會在教師 Google Chat 空間即時收到卡片，手機一鍵「同意／有困難」</span></li>
-          <li><span class="ic">✅</span><span><b>管理儀表板＋公平度報表</b> —— 本月／學期代課總量、鐘點費、各年級分布、每位老師被派次數排行，可匯出 CSV 存查</span></li>
-          <li><span class="ic">✅</span><span><b>老師個人月結預估</b> —— 每位老師登入即見本月代課節數與應領鐘點費預估（405 元/節），不必等月結</span></li>
-          <li><span class="ic">✅</span><span><b>鐘點月結算</b> —— 選月份一鍵產出「應領總表＋自費對帳＋逐筆明細」Excel；三聯單照常從試算表列印</span></li>
-          <li><span class="ic">✅</span><span><b>模擬教師登入</b> —— 管理員可一鍵以任何老師的身分預覽畫面，快速驗證帳號與課表正確</span></li>
-          <li><span class="ic">✅</span><span><b>115 學年週次已就緒</b> —— 開學 2026/08/31 起 21 週、9 個放假日已排除，選不到假日</span></li>
-          <li><span class="ic">✅</span><span><b>LINE 點連結可直接登入</b> —— 從 LINE 開啟會自動改用外部瀏覽器（Google 禁止在 App 內登入），不再出現「已封鎖存取權」錯誤</span></li>
+        <ul class="feat">
+          <li><span class="ic">✅</span><span><b>全校真實課表已進系統</b>114 學年 32 班、66 位教師（含台語／客語本土語老師），老師登入就看到自己的課表</span></li>
+          <li><span class="ic">✅</span><span><b>一鍵上傳課表</b>組長把各年級課表 PDF 拖進「課表匯入」即可更新整學期，會先顯示「哪些老師的課變了」再確認，舊表自動備份</span></li>
+          <li><span class="ic">✅</span><span><b>找代課智慧排序</b>同班、同科優先，並自動把「這個月已代很多次」「當天已滿堂」的老師往後排，輪替更公平</span></li>
+          <li><span class="ic">✅</span><span><b>老師預告請假、自己找代課</b>老師點「🗓️ 我要預告請假」選日期，系統列出當天每節課、逐節挑代課老師送出邀請，<b>不需教學組代找</b></span></li>
+          <li><span class="ic">✅</span><span><b>邀請即時通知</b>被邀老師除了 Email，還會在教師 Google Chat 空間即時收到卡片，手機一鍵「同意／有困難」</span></li>
+          <li><span class="ic">✅</span><span><b>管理儀表板＋公平度報表</b>本月／學期代課總量、鐘點費、各年級分布、每位老師被派次數排行，可匯出 CSV 存查</span></li>
+          <li><span class="ic">✅</span><span><b>老師個人月結預估</b>每位老師登入即見本月代課節數與應領鐘點費預估（405 元/節），不必等月結</span></li>
+          <li><span class="ic">✅</span><span><b>鐘點月結算</b>選月份一鍵產出「應領總表＋自費對帳＋逐筆明細」Excel；三聯單照常從試算表列印</span></li>
+          <li><span class="ic">✅</span><span><b>模擬教師登入</b>管理員可一鍵以任何老師的身分預覽畫面，快速驗證帳號與課表正確</span></li>
+          <li><span class="ic">✅</span><span><b>115 學年週次已就緒</b>開學 2026/08/31 起 21 週、9 個放假日已排除，選不到假日</span></li>
+          <li><span class="ic">✅</span><span><b>LINE 點連結可直接登入</b>從 LINE 開啟會自動改用外部瀏覽器（Google 禁止在 App 內登入），不再出現「已封鎖存取權」錯誤</span></li>
         </ul>
         <div class="note warn" style="margin-top:18px"><span class="ni">🗓️</span><div><b>8 月只剩三件事</b>：匯入 115 新課表（用一鍵上傳）、更新教師名單、提供職務名冊重建教學節數表——就是下方這份對齊清單。</div></div>
       </div>
     </section>
 
+    <div class="duo">
     <!-- A -->
     <section id="a">
       <div class="sec-head"><span class="sec-ico">📥</span><div><h2>A · 請教學組／教務處提供</h2><p class="sec-sub">這些是更新系統需要的原始資料</p></div></div>
@@ -168,11 +233,13 @@
       </div></div>
     </section>
 
+    </div>
+
     <!-- C -->
     <section id="c">
       <div class="sec-head"><span class="sec-ico">🛠️</span><div><h2>C · 拿到資料後，系統端會做</h2><p class="sec-sub">這部分不用教學組操心，備妥 A 即可執行</p></div></div>
       <div class="card">
-        <ul class="info-list">
+        <ul class="info-list two">
           <li><span class="ic">→</span><span>用 <span class="k">📥 課表匯入</span> 上傳 115 課表＋本土語 —— <b>自動先備份舊表</b>、重建、清快取、顯示新舊差異</span></li>
           <li><span class="ic">→</span><span>更新 Email 名單（新進／離退／身分變更）</span></li>
           <li><span class="ic">→</span><span>更新「週次對照表」為 115 行事曆</span></li>
@@ -180,7 +247,7 @@
           <li><span class="ic">→</span><span>抽幾位老師 <span class="k">🎭 模擬登入</span> 驗證課表正確</span></li>
           <li><span class="ic">→</span><span>確認／填入代課鐘點費單價</span></li>
         </ul>
-        <div class="note warn"><span class="ni">💡</span><div>操作細節都在 <a href="guide.html?v=2026.11.26-3" style="color:var(--accent);font-weight:600">📘 操作手冊</a>。系統網址：<span class="path">cagoooo.github.io/smes-substitute</span></div></div>
+        <div class="note warn"><span class="ni">💡</span><div>操作細節都在 <a href="guide.html?v=2026.11.26-4" style="color:var(--accent);font-weight:600">📘 操作手冊</a>。系統網址：<span class="path">cagoooo.github.io/smes-substitute</span></div></div>
       </div>
     </section>
 
@@ -194,6 +261,7 @@
       Made with <span class="site-credit__heart" aria-label="愛心">❤️</span> by
       <a href="https://cagoooo.github.io/Akai/" target="_blank" rel="noopener noreferrer" class="site-credit__author">阿凱老師</a>
     </div>
+    </main>
   </div>
 </div>
 
@@ -205,10 +273,19 @@
     try{ saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{}; }catch(e){}
     var fill=document.getElementById('progFill'), num=document.getElementById('progNum'), tot=document.getElementById('progTot');
     tot.textContent=boxes.length;
+    var sNum=document.getElementById('sideNum'), sTot=document.getElementById('sideTot'), sFill=document.getElementById('sideFill');
+    if(sTot) sTot.textContent=boxes.length;
     function refresh(){
       var done=boxes.filter(function(b){return b.checked;}).length;
-      num.textContent=done;
-      fill.style.width=(boxes.length? (done/boxes.length*100):0)+'%';
+      var pct=(boxes.length? (done/boxes.length*100):0)+'%';
+      num.textContent=done; fill.style.width=pct;
+      if(sNum){ sNum.textContent=done; sFill.style.width=pct; }
+      [].forEach.call(document.querySelectorAll('.side-secs li'),function(li){
+        var bs=[].slice.call(document.querySelectorAll('#'+li.dataset.sec+' .chk input'));
+        var d=bs.filter(function(b){return b.checked;}).length;
+        li.querySelector('b').textContent=d+'／'+bs.length;
+        li.classList.toggle('full',bs.length>0&&d===bs.length);
+      });
     }
     function save(){
       var o={}; boxes.forEach(function(b){ o[b.dataset.k]=b.checked; });
@@ -222,6 +299,18 @@
       boxes.forEach(function(b){ b.checked=false; }); save(); refresh();
     });
     refresh();
+
+    // 左側目錄：捲到哪一節就亮哪一項（永遠只亮一項）
+    var links=[].slice.call(document.querySelectorAll('.side nav a'));
+    var secs=links.map(function(a){return document.getElementById(a.getAttribute('href').slice(1));});
+    function spy(){
+      var line=innerHeight*0.3, idx=0;
+      var best=-1e9;
+      secs.forEach(function(el,i){ if(!el) return; var t=el.getBoundingClientRect().top; if(t<=line&&t>best+1){ idx=i; best=t; } });   // 並排的 A、B 頂端一樣高 → 亮前面那個
+      if(innerHeight+scrollY>=document.documentElement.scrollHeight-4) idx=secs.length-1;
+      links.forEach(function(a,i){ a.classList.toggle('active',i===idx); });
+    }
+    if(links.length){ addEventListener('scroll',spy,{passive:true}); addEventListener('resize',spy); spy(); }
   })();
 </script>
 <script>
