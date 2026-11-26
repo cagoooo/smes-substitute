@@ -46,61 +46,88 @@
   }
 
   *{box-sizing:border-box}
-  body{margin:0}
-  .wrap{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.7;
-    -webkit-font-smoothing:antialiased;padding:0 20px 72px}
-  .col{max-width:960px;margin:0 auto}
+  /* 根字級隨螢幕放大：所有 rem 字級一起長大（手機 16 → 平板 17 → 桌機 18 → 大螢幕 19px） */
+  html{font-size:16px;scroll-behavior:smooth}
+  :root{--gut:clamp(14px,3vw,36px)}
+  @media (min-width:768px){html{font-size:17px}}
+  @media (min-width:1200px){html{font-size:18px}}
+  @media (min-width:1680px){html{font-size:19px}}
+  body{margin:0;background:var(--bg)}
+  .wrap{font-family:var(--sans);background:var(--bg);color:var(--ink);line-height:1.75;
+    -webkit-font-smoothing:antialiased;padding:0 var(--gut) 72px}
+  /* 桌機善用寬度：不再鎖 960px 窄欄 */
+  .col{max-width:min(1500px,100%);margin:0 auto}
+
+  /* 桌機版：左側固定目錄＋右側內容 */
+  .layout{display:block}
+  .side{display:none}
+  @media (min-width:1200px){
+    .layout{display:grid;grid-template-columns:clamp(230px,16vw,290px) minmax(0,1fr);gap:clamp(32px,3vw,56px);align-items:start}
+    .side{display:block;position:sticky;top:24px;padding-top:44px;max-height:calc(100vh - 24px);overflow:auto}
+    nav.toc{display:none}
+  }
+  .side-title{font-size:.8125rem;letter-spacing:.14em;color:var(--ink-faint);font-weight:800;margin:0 0 10px 12px}
+  .side nav{display:flex;flex-direction:column;gap:4px}
+  .side nav a{display:grid;grid-template-columns:1.6em 1fr;gap:8px;align-items:center;padding:10px 12px;border-radius:11px;
+    color:var(--ink-soft);text-decoration:none;font-weight:700;font-size:1rem;border:1px solid transparent;transition:background .15s,color .15s,border-color .15s}
+  .side nav a small{display:block;grid-column:2;font-weight:500;font-size:.8125rem;color:var(--ink-faint);line-height:1.4;margin-top:-4px}
+  .side nav a:hover{background:var(--panel);border-color:var(--line);color:var(--ink)}
+  .side nav a.active{background:var(--accent-soft);color:var(--accent);border-color:color-mix(in srgb,var(--accent) 28%,var(--line))}
+  .side-box{margin-top:18px;padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel);display:flex;flex-direction:column;gap:6px}
+  .side-box a{color:var(--ink-soft);text-decoration:none;font-size:.9375rem;font-weight:600;padding:4px 2px}
+  .side-box a:hover{color:var(--accent)}
 
   /* header */
-  header.hero{padding:52px 0 28px;border-bottom:1px solid var(--line)}
-  .eyebrow{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 12px}
-  h1.title{font-size:clamp(28px,5vw,40px);line-height:1.2;margin:0 0 14px;font-weight:800;letter-spacing:-.01em;text-wrap:balance}
-  .lede{font-size:17px;color:var(--ink-soft);margin:0;max-width:60ch}
+  header.hero{padding:clamp(36px,5vw,64px) 0 clamp(24px,3vw,36px);border-bottom:1px solid var(--line)}
+  .eyebrow{font-size:0.8125rem;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700;margin:0 0 12px}
+  h1.title{font-size:clamp(30px,4.2vw,58px);line-height:1.2;margin:0 0 14px;font-weight:800;letter-spacing:-.01em;text-wrap:balance}
+  .lede{font-size:1.188rem;color:var(--ink-soft);margin:0;max-width:62ch}
   .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
-  .meta a,.meta span{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:var(--ink-soft);
+  .meta a,.meta span{display:inline-flex;align-items:center;gap:7px;font-size:0.9062rem;color:var(--ink-soft);
     background:var(--panel);border:1px solid var(--line);padding:7px 12px;border-radius:99px;text-decoration:none}
   .meta a:hover{border-color:var(--accent);color:var(--accent)}
-  .meta code{font-family:var(--mono);font-size:12.5px;color:var(--ink)}
+  .meta code{font-family:var(--mono);font-size:0.8438rem;color:var(--ink)}
 
   /* quick nav */
-  nav.toc{position:sticky;top:0;z-index:5;margin:0 -20px 0;padding:12px 20px;
+  nav.toc{position:sticky;top:0;z-index:5;margin:0 calc(-1 * var(--gut));padding:10px var(--gut);
     background:color-mix(in srgb,var(--bg) 82%,transparent);backdrop-filter:blur(8px);
     border-bottom:1px solid var(--line)}
   nav.toc .col{display:flex;flex-wrap:wrap;gap:8px}
-  nav.toc a{font-size:13px;font-weight:600;color:var(--ink-soft);text-decoration:none;
+  nav.toc a{font-size:0.9062rem;font-weight:600;color:var(--ink-soft);text-decoration:none;
     padding:6px 12px;border-radius:8px;border:1px solid transparent;white-space:nowrap}
   nav.toc a:hover{color:var(--ink);background:var(--panel);border-color:var(--line)}
 
   /* sections */
-  section{padding-top:44px;scroll-margin-top:64px}
+  section{padding-top:clamp(40px,4vw,60px);scroll-margin-top:72px}
+  @media (min-width:1200px){section{scroll-margin-top:24px}}
   .sec-head{display:flex;align-items:baseline;gap:12px;margin-bottom:18px}
-  .sec-ico{font-size:22px;line-height:1;transform:translateY(1px)}
-  h2{font-size:22px;font-weight:800;margin:0;letter-spacing:-.01em}
-  .sec-sub{color:var(--ink-faint);font-size:13.5px;margin:3px 0 0}
+  .sec-ico{font-size:1.625rem;line-height:1;transform:translateY(1px)}
+  h2{font-size:1.625rem;font-weight:800;margin:0;letter-spacing:-.01em}
+  .sec-sub{color:var(--ink-faint);font-size:0.9375rem;margin:3px 0 0}
 
   .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
-    box-shadow:var(--shadow);padding:26px 28px}
-  @media(max-width:560px){.card{padding:20px 18px}.wrap{padding:0 14px 56px}}
+    box-shadow:var(--shadow);padding:clamp(20px,2.4vw,40px) clamp(18px,2.6vw,44px)}
+  @media(max-width:560px){.wrap{padding-bottom:56px}}
 
   /* numbered steps */
   ol.steps{list-style:none;counter-reset:s;margin:0;padding:0;display:flex;flex-direction:column;gap:16px}
-  ol.steps>li{counter-increment:s;display:grid;grid-template-columns:30px 1fr;gap:14px;align-items:start}
-  ol.steps>li::before{content:counter(s);width:30px;height:30px;border-radius:9px;
-    background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:14px;
+  ol.steps>li{counter-increment:s;display:grid;grid-template-columns:2em 1fr;gap:14px;align-items:start}
+  ol.steps>li::before{content:counter(s);width:2em;height:2em;border-radius:9px;
+    background:var(--accent-soft);color:var(--accent);font-weight:800;font-size:0.9688rem;
     display:flex;align-items:center;justify-content:center;font-variant-numeric:tabular-nums}
   ol.steps .st-t{font-weight:600}
-  ol.steps .st-d{color:var(--ink-soft);font-size:14.5px;margin-top:2px}
+  ol.steps .st-d{color:var(--ink-soft);font-size:1rem;margin-top:2px}
 
   /* inline ui tokens */
   .k{font-family:var(--sans);font-weight:700;background:var(--panel-2);border:1px solid var(--line-strong);
-    border-radius:7px;padding:1px 8px;font-size:13.5px;white-space:nowrap;color:var(--ink)}
-  .path{font-family:var(--mono);font-size:12.5px;color:var(--ink-soft);word-break:break-all}
+    border-radius:7px;padding:1px 8px;font-size:0.9375rem;white-space:nowrap;color:var(--ink)}
+  .path{font-family:var(--mono);font-size:0.8438rem;color:var(--ink-soft);word-break:break-all}
   b.hl{color:var(--accent)}
 
   /* callouts */
   .note{display:grid;grid-template-columns:auto 1fr;gap:11px;border-radius:11px;padding:13px 15px;margin-top:16px;
-    font-size:14px;border:1px solid var(--line)}
-  .note .ni{font-size:16px;line-height:1.5}
+    font-size:0.9688rem;border:1px solid var(--line)}
+  .note .ni{font-size:1.062rem;line-height:1.5}
   .note.warn{background:var(--warn-soft);border-color:color-mix(in srgb,var(--warn) 34%,var(--line))}
   .note.tip{background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 26%,var(--line))}
   .note.ok{background:var(--ok-soft);border-color:color-mix(in srgb,var(--ok) 30%,var(--line))}
@@ -109,15 +136,15 @@
   /* role chips */
   .roles{display:flex;flex-wrap:wrap;gap:12px;margin-top:4px}
   .role{flex:1 1 200px;border:1px solid var(--line);border-radius:11px;padding:14px 16px;background:var(--panel-2)}
-  .role .rn{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px}
-  .role .rd{color:var(--ink-soft);font-size:13.5px;margin-top:5px}
+  .role .rn{font-weight:800;font-size:1.031rem;display:flex;align-items:center;gap:8px}
+  .role .rd{color:var(--ink-soft);font-size:0.9375rem;margin-top:5px}
   .dot{width:9px;height:9px;border-radius:99px;display:inline-block}
 
   /* 雙欄版面配置 */
   .ui-grid {
     display: grid;
-    grid-template-columns: 1.2fr 0.8fr;
-    gap: 32px;
+    grid-template-columns: minmax(0,1.1fr) minmax(0,.9fr);
+    gap: clamp(24px,3vw,48px);
     align-items: center;
   }
   @media (max-width: 900px) {
@@ -147,7 +174,7 @@
   
   .ui-card-header {
     padding: 10px 14px;
-    font-size: 13.5px;
+    font-size: 0.9375rem;
     font-weight: 700;
     color: #fff;
   }
@@ -164,12 +191,12 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
-    font-size: 12px;
+    font-size: 0.8125rem;
   }
   .ui-brand { font-weight: 800; color: var(--ink); }
   .ui-nav-right { display: flex; align-items: center; gap: 8px; }
   .ui-user-badge { color: var(--ink-soft); }
-  .ui-btn { padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 11px; cursor: pointer; }
+  .ui-btn { padding: 4px 8px; border-radius: 6px; font-weight: 700; font-size: 0.7812rem; cursor: pointer; }
   .ui-btn-admin { background: var(--accent-soft); color: var(--accent); border: 1px solid color-mix(in srgb,var(--accent) 30%,var(--line)); }
   
   .ui-login-box {
@@ -188,11 +215,11 @@
     border-radius: 4px;
     padding: 6px 12px;
     font-weight: 700;
-    font-size: 13px;
+    font-size: 0.9062rem;
     box-shadow: 0 1px 2px rgba(0,0,0,.05);
   }
-  .g-logo { font-weight: 900; color: #4285F4; margin-right: 8px; font-size: 15px; }
-  .g-hint { font-size: 11px; color: var(--ink-faint); margin-top: 8px; }
+  .g-logo { font-weight: 900; color: #4285F4; margin-right: 8px; font-size: 1.031rem; }
+  .g-hint { font-size: 0.7812rem; color: var(--ink-faint); margin-top: 8px; }
 
   .ui-upload-zone {
     padding: 16px;
@@ -207,32 +234,32 @@
     border: 1px solid color-mix(in srgb,var(--accent) 20%,var(--line));
     padding: 4px 10px;
     border-radius: 99px;
-    font-size: 12px;
+    font-size: 0.8125rem;
     font-weight: 700;
     margin: 4px;
   }
-  .ui-file-size { font-size: 10px; opacity: 0.7; font-weight: normal; }
-  .ui-upload-text { font-size: 11px; color: var(--ink-soft); margin-top: 6px; }
+  .ui-file-size { font-size: 0.75rem; opacity: 0.7; font-weight: normal; }
+  .ui-upload-text { font-size: 0.7812rem; color: var(--ink-soft); margin-top: 6px; }
   
-  .ui-preview-stats { padding: 12px 14px; font-size: 12.5px; }
+  .ui-preview-stats { padding: 12px 14px; font-size: 0.8438rem; }
   .ui-stat-row { display: flex; justify-content: space-between; margin-bottom: 6px; }
   .text-ok { color: var(--ok); }
   .text-warn { color: var(--warn); }
-  .ui-btn-action { padding: 8px; text-align: center; font-size: 13px; font-weight: 700; color: #fff; cursor: pointer; }
+  .ui-btn-action { padding: 8px; text-align: center; font-size: 0.9062rem; font-weight: 700; color: #fff; cursor: pointer; }
   .ui-btn-action.bg-ok { background: var(--ok); }
   
   .ui-mock-banner {
     background: var(--sim);
     color: #fff;
-    font-size: 12px;
+    font-size: 0.8125rem;
     padding: 6px 12px;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
-  .ui-banner-exit { background: rgba(255,255,255,.2); padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 10px; }
+  .ui-banner-exit { background: rgba(255,255,255,.2); padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 0.75rem; }
   .ui-mock-screen { padding: 12px; }
-  .ui-screen-title { font-size: 12px; font-weight: 700; margin-bottom: 8px; color: var(--ink-soft); }
+  .ui-screen-title { font-size: 0.8125rem; font-weight: 700; margin-bottom: 8px; color: var(--ink-soft); }
   
   .ui-mini-table {
     display: grid;
@@ -244,7 +271,7 @@
   }
   .ui-cell-mock {
     padding: 6px 4px;
-    font-size: 11px;
+    font-size: 0.7812rem;
     text-align: center;
     border-right: 1px solid var(--line);
     border-bottom: 1px solid var(--line);
@@ -257,7 +284,7 @@
     background: var(--warn-soft);
     border-bottom: 1px solid var(--line);
     padding: 6px 12px;
-    font-size: 11.5px;
+    font-size: 0.8125rem;
     color: var(--warn);
     font-weight: 700;
   }
@@ -265,15 +292,15 @@
   .ui-table-mock {
     width: 100%;
     border-collapse: collapse;
-    font-size: 12px;
+    font-size: 0.8125rem;
     text-align: left;
   }
   .ui-table-mock th { padding: 8px 12px; background: var(--panel-2); color: var(--ink-soft); border-bottom: 1px solid var(--line); }
   .ui-table-mock td { padding: 8px 12px; border-bottom: 1px solid var(--line); }
   .ui-tr-highlight { background: color-mix(in srgb, var(--accent) 6%, var(--panel)); }
-  .ui-btn-mini { padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: 700; color: #fff; cursor: pointer; }
+  .ui-btn-mini { padding: 2px 6px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; color: #fff; cursor: pointer; }
   .ui-btn-mini.bg-accent { background: var(--accent); }
-  .badge { display: inline-block; padding: 2px 4px; border-radius: 4px; font-size: 9px; font-weight: 700; margin-left: 4px; }
+  .badge { display: inline-block; padding: 2px 4px; border-radius: 4px; font-size: 0.6875rem; font-weight: 700; margin-left: 4px; }
   .badge.bg-info { background: var(--accent-soft); color: var(--accent); }
   .badge.bg-success { background: var(--ok-soft); color: var(--ok); }
   .badge.bg-warning { background: var(--warn-soft); color: var(--warn); }
@@ -284,7 +311,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 12px;
+    font-size: 0.8125rem;
     background: var(--panel-2);
   }
   .ui-select-mock {
@@ -295,14 +322,14 @@
     font-weight: 600;
   }
   .ui-excel-preview { padding: 12px; }
-  .excel-header { font-size: 11.5px; font-weight: 700; color: var(--ink-soft); margin-bottom: 8px; }
+  .excel-header { font-size: 0.8125rem; font-weight: 700; color: var(--ink-soft); margin-bottom: 8px; }
   .excel-btn-group { display: flex; flex-direction: column; gap: 6px; }
   .excel-btn {
     background: var(--panel-2);
     border: 1px solid var(--line-strong);
     padding: 8px 12px;
     border-radius: 6px;
-    font-size: 11.5px;
+    font-size: 0.8125rem;
     font-weight: 600;
     cursor: pointer;
     transition: background .2s, border-color .2s;
@@ -311,20 +338,28 @@
 
   /* mini summary card demo */
   .demo{margin-top:16px;border:1px dashed var(--line-strong);border-radius:11px;padding:14px 16px;background:var(--panel-2)}
-  .demo .dh{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);font-weight:700;margin-bottom:8px}
-  .demo .big{font-size:15px}
+  .demo .dh{font-size:0.8125rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);font-weight:700;margin-bottom:8px}
+  .demo .big{font-size:1.031rem}
   .demo .money{color:var(--ok);font-weight:800}
 
-  footer{margin-top:56px;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:13px;
+  footer{margin-top:56px;padding-top:24px;border-top:1px solid var(--line);color:var(--ink-faint);font-size:0.9062rem;
     display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
   footer a{color:var(--ink-soft);text-decoration:none}
   footer a:hover{color:var(--accent)}
   a:focus-visible,.meta a:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
   /* 作者頁尾署名 */
-  .site-credit{text-align:center;padding:22px 16px 4px;font-size:13px;color:var(--ink-faint);font-family:var(--sans)}
+  .site-credit{text-align:center;padding:22px 16px 4px;font-size:0.9062rem;color:var(--ink-faint);font-family:var(--sans)}
   .site-credit__heart{display:inline-block;margin:0 2px;filter:saturate(1.1)}
   .site-credit__author{color:inherit;text-decoration:none;border-bottom:1px dotted currentColor;padding-bottom:1px;transition:color .2s,border-color .2s}
   .site-credit__author:hover{color:var(--accent);border-bottom-color:var(--accent)}
+  /* 常見問題：桌機雙欄卡片 */
+  .faq{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr))}
+  .faq .q{border:1px solid var(--line);border-radius:12px;padding:16px 18px;background:var(--panel-2)}
+  .faq .q>b{display:block;font-size:1.0625rem;margin-bottom:6px}
+  /* 帳號管理：寬螢幕三步驟橫排 */
+  @media (min-width:1000px){ol.steps.row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px}}
+  /* 模擬畫面在寬螢幕多一點內距 */
+  @media (min-width:1200px){.ui-preview{padding:20px}.ui-cell-mock{padding:9px 6px}.ui-table-mock th,.ui-table-mock td{padding:10px 14px}}
 </style>
 </head>
 <body>
@@ -356,7 +391,24 @@
     </div>
   </nav>
 
-  <div class="col">
+  <div class="col layout">
+    <aside class="side" aria-label="本頁目錄">
+      <p class="side-title">本頁目錄</p>
+      <nav>
+        <a href="#login"><span>🔓</span>登入與身分<small>誰能看到系統管理</small></a>
+        <a href="#upload"><span>📥</span>上傳課表<small>每學期換新課表</small></a>
+        <a href="#simulate"><span>🎭</span>模擬登入<small>看老師登入後的畫面</small></a>
+        <a href="#accounts"><span>🔑</span>帳號管理<small>加人、改信箱、給權限</small></a>
+        <a href="#match"><span>🔍</span>找代課 / 調課<small>智慧空堂篩選</small></a>
+        <a href="#settle"><span>💰</span>月結與鐘點<small>Excel 報表、三聯單</small></a>
+        <a href="#faq"><span>🧭</span>常見問題<small>遇到狀況先看這裡</small></a>
+      </nav>
+      <div class="side-box">
+        <a href="./">← 回調代課系統</a>
+        <a href="checklist.html">🗓️ 新學期對齊清單</a>
+      </div>
+    </aside>
+    <main>
 
     <!-- 0 登入 -->
     <section id="login">
@@ -468,7 +520,7 @@
     <section id="accounts">
       <div class="sec-head"><span class="sec-ico">🔑</span><div><h2>教師帳號管理</h2><p class="sec-sub">加人、改登入信箱、給組長權限</p></div></div>
       <div class="card">
-        <ol class="steps">
+        <ol class="steps row">
           <li><div><div class="st-t">新增 / 編輯 / 刪除老師</div><div class="st-d">在 <span class="k">🔑 教師 Email 授權名單</span> 分頁：填姓名、學校 Email、身分（教師／行政／管理員）→ <span class="k">💾 儲存</span>。</div></div></li>
           <li><div><div class="st-t">改某位老師的登入信箱</div><div class="st-d">對他按 <span class="k">編輯</span> → 改 Email → 儲存。（老師換常用信箱時用這個。）</div></div></li>
           <li><div><div class="st-t">授權教學組長為管理員</div><div class="st-d">也可在試算表選單 <span class="k">📅 系統出單功能</span> → <span class="k">🔑 授權教學組長為管理員</span> 一鍵處理。</div></div></li>
@@ -479,7 +531,7 @@
 
     <!-- 4 找代課 -->
     <section id="match">
-      <div class="sec-head"><span class="sec-ico">🔍</span><div><h2>找人代課 / 節次調課</h2><p class="sec-sub">系統會幫你把最適合 the 老師排在前面</p></div></div>
+      <div class="sec-head"><span class="sec-ico">🔍</span><div><h2>找人代課 / 節次調課</h2><p class="sec-sub">系統會幫你把最適合的老師排在前面</p></div></div>
       <div class="card">
         <div class="ui-grid">
           <div>
@@ -488,7 +540,7 @@
               <li><div><div class="st-t">點要調代的一節或多節課</div><div class="st-d">在左側課表點該老師要請假的格子。<b class="hl">支援多選！</b>若點選同老師的連續多節課（如連續兩節自然課），系統會同時將它們選取。</div></div></li>
               <li><div><div class="st-t">智慧空堂篩選與建議</div><div class="st-d">右側名單自動過濾出<b class="hl">在所選的這幾節課都空堂</b>的老師。並依「同班、同科優先，代課次數少、當天授課負荷低」加減分排序。</div></div></li>
               <li><div><div class="st-t">進行模擬比對</div><div class="st-d">多選時預設強制為「找人代課」模式。按候選老師旁的 <span class="k">模擬</span>，即可在對照表上看見這幾節課在請假者與代課者課表上的變更。</div></div></li>
-              <li><div><div class="st-t">送出申請</div><div class="st-d">選取鐘點費類別並提交，系統會使用 Promise.all 批次送出多張代課單據，並同步發送信件與 Google Chat 通知。</div></div></li>
+              <li><div><div class="st-t">送出申請</div><div class="st-d">選取鐘點費類別並提交，系統會一次批次送出多張代課單據，並同步發送信件與 Google Chat 通知。</div></div></li>
             </ol>
             <div class="note tip"><span class="ni">💡</span><div>多選功能（如社會、自然等連續排課）可一次性建立多節代課單，受邀老師將一次收到多張單據的確認連結，省時又便利！</div></div>
           </div>
@@ -537,7 +589,7 @@
             <div class="demo">
               <div class="dh">老師個人頁 · 本月彙整（示意）</div>
               <div class="big">代課 <b style="color:var(--accent)">3</b> 節　·　調課 <b>1</b> 次</div>
-              <div class="big">應領鐘點費預估 <span class="money">$1,215</span> <span style="color:var(--ink-faint);font-size:12px">（3 節 × 405 元）</span></div>
+              <div class="big">應領鐘點費預估 <span class="money">$1,215</span> <span style="color:var(--ink-faint);font-size:0.8125rem">（3 節 × 405 元）</span></div>
             </div>
           </div>
           <div class="ui-preview">
@@ -566,13 +618,13 @@
     <section id="faq">
       <div class="sec-head"><span class="sec-ico">🧭</span><div><h2>常見問題 / 換學期</h2><p class="sec-sub">遇到狀況先看這裡</p></div></div>
       <div class="card">
-        <div style="display:flex;flex-direction:column;gap:14px">
-          <div><b>Q. 手機登入出現「已封鎖存取權…403 disallowed_useragent」？</b><div class="st-d" style="color:var(--ink-soft)">這是從 <b>LINE／FB 等 App 內建瀏覽器</b>開啟造成的（Google 禁止在 App 內登入）。系統已會自動跳轉或提示：LINE 會自動改用外部瀏覽器，Android 的臉書／Messenger 會自動嘗試開啟 Chrome；若仍看到，請點「⋯」→「用預設瀏覽器開啟」，或把系統「加入主畫面」後從桌面圖示開啟。</div></div>
-          <div><b>Q. 老師說登入不了、「不在授權名單」？</b><div class="st-d" style="color:var(--ink-soft)">到 <span class="k">🔑 教師 Email 授權名單</span> 把他的學校信箱加進去（姓名與課表一致）。</div></div>
-          <div><b>Q. 老師登入了，但課表是空的？</b><div class="st-d" style="color:var(--ink-soft)">名單姓名 and 課表姓名對不上。用 <span class="k">🎭 模擬</span> 抽驗、到名單把姓名改成跟課表一致。</div></div>
-          <div><b>Q. 新學期要換整份課表？</b><div class="st-d" style="color:var(--ink-soft)">用 <span class="k">📥 課表匯入</span> 上傳新的「各年級班級課表 PDF ＋ 本土語教師課表 PDF」，系統會先備份舊表再重建。</div></div>
-          <div><b>Q. 畫面出現「系統有新版本」？</b><div class="st-d" style="color:var(--ink-soft)">按 <span class="k">重新整理載入</span> 即可更新到最新版；閒置時會自動更新並跳「已更新」提示。</div></div>
-          <div><b>Q. 畫面出現「SW 衝突 / Failed to fetch」或改了課表卻看到舊的？</b><div class="st-d" style="color:var(--ink-soft)">匯入已會自動清快取；若是快取衝突，請按重新整理；或在試算表選單點 <span class="k">🧹 清除系統快取</span>、再重新整理網頁。系統已於 localhost 開發環境下自動 unregister SW 以絕後患。</div></div>
+        <div class="faq">
+          <div class="q"><b>Q. 手機登入出現「已封鎖存取權…403 disallowed_useragent」？</b><div class="st-d" style="color:var(--ink-soft)">這是從 <b>LINE／FB 等 App 內建瀏覽器</b>開啟造成的（Google 禁止在 App 內登入）。系統已會自動跳轉或提示：LINE 會自動改用外部瀏覽器，Android 的臉書／Messenger 會自動嘗試開啟 Chrome；若仍看到，請點「⋯」→「用預設瀏覽器開啟」，或把系統「加入主畫面」後從桌面圖示開啟。</div></div>
+          <div class="q"><b>Q. 老師說登入不了、「不在授權名單」？</b><div class="st-d" style="color:var(--ink-soft)">到 <span class="k">🔑 教師 Email 授權名單</span> 把他的學校信箱加進去（姓名與課表一致）。</div></div>
+          <div class="q"><b>Q. 老師登入了，但課表是空的？</b><div class="st-d" style="color:var(--ink-soft)">名單姓名和課表姓名對不上。用 <span class="k">🎭 模擬</span> 抽驗、到名單把姓名改成跟課表一致。</div></div>
+          <div class="q"><b>Q. 新學期要換整份課表？</b><div class="st-d" style="color:var(--ink-soft)">用 <span class="k">📥 課表匯入</span> 上傳新的「各年級班級課表 PDF ＋ 本土語教師課表 PDF」，系統會先備份舊表再重建。</div></div>
+          <div class="q"><b>Q. 畫面出現「系統有新版本」？</b><div class="st-d" style="color:var(--ink-soft)">按 <span class="k">重新整理載入</span> 即可更新到最新版；閒置時會自動更新並跳「已更新」提示。</div></div>
+          <div class="q"><b>Q. 畫面出現「SW 衝突 / Failed to fetch」或改了課表卻看到舊的？</b><div class="st-d" style="color:var(--ink-soft)">匯入已會自動清快取；若是快取衝突，請按重新整理；或在試算表選單點 <span class="k">🧹 清除系統快取</span>、再重新整理網頁。系統已於 localhost 開發環境下自動 unregister SW 以絕後患。</div></div>
         </div>
       </div>
     </section>
@@ -588,7 +640,24 @@
          target="_blank" rel="noopener noreferrer" class="site-credit__author">阿凱老師</a>
     </div>
 
+    </main>
   </div>
 </div>
+<script>
+// 左側目錄：捲到哪一節就亮哪一項（永遠只亮一項）
+(function(){
+  var links=[].slice.call(document.querySelectorAll('.side nav a'));
+  if(!links.length)return;
+  var secs=links.map(function(a){return document.getElementById(a.getAttribute('href').slice(1));});
+  function update(){
+    var line=innerHeight*0.3, idx=0;
+    secs.forEach(function(el,i){if(el&&el.getBoundingClientRect().top<=line)idx=i;});
+    if(innerHeight+scrollY>=document.documentElement.scrollHeight-4)idx=secs.length-1;
+    links.forEach(function(a,i){a.classList.toggle('active',i===idx);});
+  }
+  addEventListener('scroll',update,{passive:true});
+  addEventListener('resize',update);update();
+})();
+</script>
 </body>
 </html>
